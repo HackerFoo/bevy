@@ -12,18 +12,18 @@ readme = "README.md"
 repository = "https://github.com/bevyengine/bevy"
 rust-version = "1.66.0"
 
-[workspace]
-exclude = ["benches", "crates/bevy_ecs_compile_fail_tests", "crates/bevy_reflect_compile_fail_tests"]
-members = [
-  "crates/*",
-  "examples/android",
-  "examples/ios",
-  "tools/ci",
-  "tools/spancmp",
-  "tools/build-example-pages",
-  "tools/build-wasm-example",
-  "errors",
-]
+# [workspace]
+# exclude = ["benches", "crates/bevy_ecs_compile_fail_tests", "crates/bevy_reflect_compile_fail_tests"]
+# members = [
+#   "crates/*",
+#   "examples/android",
+#   "examples/ios",
+#   "tools/ci",
+#   "tools/spancmp",
+#   "tools/build-example-pages",
+#   "tools/build-wasm-example",
+#   "errors",
+# ]
 
 [features]
 default = [

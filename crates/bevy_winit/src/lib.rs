@@ -543,6 +543,7 @@ pub fn winit_runner_with(mut app: App) {
                             id: window_id,
                             focused,
                         });
+                        winit_state.active = focused;
                     }
                     WindowEvent::DroppedFile(path_buf) => {
                         world.send_event(FileDragAndDrop::DroppedFile {

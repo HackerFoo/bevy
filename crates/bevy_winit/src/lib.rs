@@ -528,6 +528,7 @@ pub fn winit_runner(mut app: App) {
                             window: window_entity,
                             focused,
                         });
+                        winit_state.active = focused;
                     }
                     WindowEvent::DroppedFile(path_buf) => {
                         file_drag_and_drop_events.send(FileDragAndDrop::DroppedFile {

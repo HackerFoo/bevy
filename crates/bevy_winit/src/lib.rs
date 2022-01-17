@@ -40,6 +40,9 @@ use crate::system::WinitWindowInfo;
 #[cfg(target_arch = "wasm32")]
 use crate::web_resize::{CanvasParentResizeEventChannel, CanvasParentResizePlugin};
 
+#[cfg(target_os = "ios")]
+use winit::platform::ios::EventLoopExtIOS;
+
 #[derive(Default)]
 pub struct WinitPlugin;
 
@@ -216,6 +219,9 @@ impl Default for WinitPersistentState {
     }
 }
 
+#[cfg(target_os = "ios")]
+pub struct Idiom(pub winit::platform::ios::Idiom);
+
 pub fn winit_runner(mut app: App) {
     // We remove this so that we have ownership over it.
     let mut event_loop = app
@@ -231,6 +237,10 @@ pub fn winit_runner(mut app: App) {
 
     let return_from_run = app.world.resource::<WinitSettings>().return_from_run;
 
+    #[cfg(target_os = "ios")]
+    {
+        app.world.insert_resource(Idiom(event_loop.idiom()))
+    }
     trace!("Entering winit event loop");
 
     let mut focused_window_state: SystemState<(Res<WinitSettings>, Query<&Window>)> =

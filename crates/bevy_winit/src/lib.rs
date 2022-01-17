@@ -58,6 +58,9 @@ use crate::web_resize::{CanvasParentResizeEventChannel, CanvasParentResizePlugin
 #[cfg(target_os = "android")]
 pub static ANDROID_APP: once_cell::sync::OnceCell<AndroidApp> = once_cell::sync::OnceCell::new();
 
+#[cfg(target_os = "ios")]
+use winit::platform::ios::EventLoopExtIOS;
+
 /// A [`Plugin`] that utilizes [`winit`] for window creation and event loop management.
 #[derive(Default)]
 pub struct WinitPlugin;
@@ -280,6 +283,9 @@ impl Default for WinitPersistentState {
     }
 }
 
+#[cfg(target_os = "ios")]
+pub struct Idiom(pub winit::platform::ios::Idiom);
+
 /// The default [`App::runner`] for the [`WinitPlugin`] plugin.
 ///
 /// Overriding the app's [runner](bevy_app::App::runner) while using `WinitPlugin` will bypass the `EventLoop`.
@@ -298,6 +304,10 @@ pub fn winit_runner(mut app: App) {
 
     let return_from_run = app.world.resource::<WinitSettings>().return_from_run;
 
+    #[cfg(target_os = "ios")]
+    {
+        app.world.insert_resource(Idiom(event_loop.idiom()))
+    }
     trace!("Entering winit event loop");
 
     let mut focused_window_state: SystemState<(Res<WinitSettings>, Query<&Window>)> =

@@ -33,6 +33,11 @@ use winit::{
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
 };
 
+use winit::dpi::LogicalSize;
+
+#[cfg(target_os = "ios")]
+use winit::platform::ios::EventLoopExtIOS;
+
 #[derive(Default)]
 pub struct WinitPlugin;
 
@@ -350,6 +355,9 @@ impl Default for WinitPersistentState {
 #[derive(Default, Resource)]
 struct WinitCreateWindowReader(ManualEventReader<CreateWindow>);
 
+#[cfg(target_os = "ios")]
+pub struct Idiom(pub winit::platform::ios::Idiom);
+
 pub fn winit_runner_with(mut app: App) {
     let mut event_loop = app
         .world
@@ -368,6 +376,10 @@ pub fn winit_runner_with(mut app: App) {
 
     let return_from_run = app.world.resource::<WinitSettings>().return_from_run;
 
+    #[cfg(target_os = "ios")]
+    {
+        app.world.insert_resource(Idiom(event_loop.idiom()))
+    }
     trace!("Entering winit event loop");
 
     let event_handler = move |event: Event<()>,

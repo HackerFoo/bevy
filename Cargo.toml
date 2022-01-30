@@ -511,6 +511,10 @@ category = "3D Rendering"
 wasm = false
 
 [[example]]
+name = "sphere_lighting"
+path = "examples/3d/sphere_lighting.rs"
+
+[[example]]
 name = "load_gltf"
 path = "examples/3d/load_gltf.rs"
 

@@ -11,6 +11,7 @@ use std::marker::PhantomData;
 
 pub enum PrepareAssetError<E: Send + Sync + 'static> {
     RetryNextUpdate(E),
+    Abort,
 }
 
 /// Describes how an asset gets extracted and prepared for rendering.
@@ -195,6 +196,7 @@ fn prepare_assets<R: RenderAsset>(
             Err(PrepareAssetError::RetryNextUpdate(extracted_asset)) => {
                 prepare_next_frame.assets.push((handle, extracted_asset));
             }
+            Err(PrepareAssetError::Abort) => {}
         }
     }
 
@@ -210,6 +212,7 @@ fn prepare_assets<R: RenderAsset>(
             Err(PrepareAssetError::RetryNextUpdate(extracted_asset)) => {
                 prepare_next_frame.assets.push((handle, extracted_asset));
             }
+            Err(PrepareAssetError::Abort) => {}
         }
     }
 }

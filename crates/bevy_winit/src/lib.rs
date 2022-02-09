@@ -623,6 +623,13 @@ pub fn winit_runner_with(mut app: App) {
                 events.send(AppLifecycle::Foreground);
                 winit_state.active = true;
             }
+            event::Event::MemoryWarning => {
+                let mut events = app
+                    .world
+                    .get_resource_mut::<Events<AppLifecycle>>()
+                    .unwrap();
+                events.send(AppLifecycle::MemoryWarning);
+            }
             event::Event::OpenFile(path_buf) => {
                 let mut events = app.world.get_resource_mut::<Events<OpenFile>>().unwrap();
                 events.send(OpenFile { path_buf });

@@ -12,7 +12,7 @@ use bevy_app::{App, AppExit, CoreStage, Plugin};
 use bevy_ecs::prelude::*;
 use bevy_ecs::{
     event::{Events, ManualEventReader},
-    world::World,
+    world::WorldCell,
 };
 use bevy_input::mouse::{MouseButtonInput, MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy_math::{ivec2, DVec2, UVec2, Vec2};
@@ -32,8 +32,6 @@ use winit::{
     event::{self, DeviceEvent, Event, StartCause, WindowEvent},
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
 };
-
-use winit::dpi::LogicalSize;
 
 #[cfg(target_os = "ios")]
 use winit::platform::ios::EventLoopExtIOS;
@@ -355,6 +353,17 @@ impl Default for WinitPersistentState {
 #[derive(Default, Resource)]
 struct WinitCreateWindowReader(ManualEventReader<CreateWindow>);
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct WinitState {
+    active: bool,
+}
+
+impl WinitState {
+    pub fn is_active(&self) -> bool {
+        self.active
+    }
+}
+
 #[cfg(target_os = "ios")]
 pub struct Idiom(pub winit::platform::ios::Idiom);
 
@@ -373,6 +382,7 @@ pub fn winit_runner_with(mut app: App) {
     let mut winit_state = WinitPersistentState::default();
     app.world
         .insert_non_send_resource(event_loop.create_proxy());
+    app.world.init_resource::<WinitState>();
 
     let return_from_run = app.world.resource::<WinitSettings>().return_from_run;
 
@@ -635,25 +645,32 @@ pub fn winit_runner_with(mut app: App) {
                 events.send(OpenFile { path_buf });
             }
             event::Event::MainEventsCleared => {
-                handle_create_window_events(
-                    &mut app.world,
-                    event_loop,
-                    &mut create_window_event_reader,
-                );
-                let winit_config = app.world.resource::<WinitSettings>();
-                let update = if winit_state.active {
-                    let windows = app.world.resource::<Windows>();
-                    let focused = windows.iter().any(|w| w.is_focused());
-                    match winit_config.update_mode(focused) {
-                        UpdateMode::Continuous | UpdateMode::Reactive { .. } => true,
-                        UpdateMode::ReactiveLowPower { .. } => {
-                            winit_state.low_power_event
-                                || winit_state.redraw_request_sent
-                                || winit_state.timeout_reached
-                        }
+                let update = {
+                    let world = app.world.cell();
+                    handle_create_window_events(
+                        &world,
+                        event_loop,
+                        &mut create_window_event_reader,
+                    );
+                    let winit_config = world.get_resource::<WinitSettings>().unwrap();
+                    let mut winit_state_resource = world.get_resource_mut::<WinitState>().unwrap();
+                    if winit_state_resource.active != winit_state.active {
+                        winit_state_resource.active = winit_state.active;
                     }
-                } else {
-                    false
+                    if winit_state.active {
+                        let windows = world.get_resource::<Windows>().unwrap();
+                        let focused = windows.iter().any(|w| w.is_focused());
+                        match winit_config.update_mode(focused) {
+                            UpdateMode::Continuous | UpdateMode::Reactive { .. } => true,
+                            UpdateMode::ReactiveLowPower { .. } => {
+                                winit_state.low_power_event
+                                    || winit_state.redraw_request_sent
+                                    || winit_state.timeout_reached
+                            }
+                        }
+                    } else {
+                        false
+                    }
                 };
                 if update {
                     winit_state.last_update = Instant::now();
@@ -707,14 +724,13 @@ pub fn winit_runner_with(mut app: App) {
 }
 
 fn handle_create_window_events(
-    world: &mut World,
+    world: &WorldCell,
     event_loop: &EventLoopWindowTarget<()>,
     create_window_event_reader: &mut ManualEventReader<CreateWindow>,
 ) {
-    let world = world.cell();
-    let mut winit_windows = world.non_send_resource_mut::<WinitWindows>();
-    let mut windows = world.resource_mut::<Windows>();
-    let create_window_events = world.resource::<Events<CreateWindow>>();
+    let mut winit_windows = world.get_non_send_resource_mut::<WinitWindows>().unwrap();
+    let mut windows = world.get_resource_mut::<Windows>().unwrap();
+    let create_window_events = world.get_resource::<Events<CreateWindow>>().unwrap();
     for create_window_event in create_window_event_reader.iter(&create_window_events) {
         let window = winit_windows.create_window(
             event_loop,

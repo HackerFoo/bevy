@@ -21,9 +21,9 @@ use bevy_utils::{
     Instant,
 };
 use bevy_window::{
-    CreateWindow, CursorEntered, CursorLeft, CursorMoved, FileDragAndDrop, ModifiesWindows,
-    ReceivedCharacter, RequestRedraw, WindowBackendScaleFactorChanged, WindowCloseRequested,
-    WindowClosed, WindowCreated, WindowFocused, WindowMoved, WindowResized,
+    AppLifecycle, CreateWindow, CursorEntered, CursorLeft, CursorMoved, FileDragAndDrop,
+    ModifiesWindows, OpenFile, ReceivedCharacter, RequestRedraw, WindowBackendScaleFactorChanged,
+    WindowCloseRequested, WindowClosed, WindowCreated, WindowFocused, WindowMoved, WindowResized,
     WindowScaleFactorChanged, Windows,
 };
 
@@ -579,10 +579,40 @@ pub fn winit_runner_with(mut app: App) {
                 });
             }
             event::Event::Suspended => {
+                let mut events = app
+                    .world
+                    .get_resource_mut::<Events<AppLifecycle>>()
+                    .unwrap();
+                events.send(AppLifecycle::Suspended);
                 winit_state.active = false;
             }
             event::Event::Resumed => {
+                let mut events = app
+                    .world
+                    .get_resource_mut::<Events<AppLifecycle>>()
+                    .unwrap();
+                events.send(AppLifecycle::Resumed);
                 winit_state.active = true;
+            }
+            event::Event::Background => {
+                let mut events = app
+                    .world
+                    .get_resource_mut::<Events<AppLifecycle>>()
+                    .unwrap();
+                events.send(AppLifecycle::Background);
+                winit_state.active = false;
+            }
+            event::Event::Foreground => {
+                let mut events = app
+                    .world
+                    .get_resource_mut::<Events<AppLifecycle>>()
+                    .unwrap();
+                events.send(AppLifecycle::Foreground);
+                winit_state.active = true;
+            }
+            event::Event::OpenFile(path_buf) => {
+                let mut events = app.world.get_resource_mut::<Events<OpenFile>>().unwrap();
+                events.send(OpenFile { path_buf });
             }
             event::Event::MainEventsCleared => {
                 handle_create_window_events(

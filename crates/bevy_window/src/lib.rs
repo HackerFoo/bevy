@@ -17,7 +17,7 @@ pub use window::*;
 pub mod prelude {
     #[doc(hidden)]
     pub use crate::{
-        CursorEntered, CursorIcon, CursorLeft, CursorMoved, FileDragAndDrop, Ime, MonitorSelection,
+        AppLifecycle, CursorEntered, CursorIcon, CursorLeft, CursorMoved, FileDragAndDrop, Ime, MonitorSelection, OpenFile,
         ReceivedCharacter, Window, WindowMoved, WindowPlugin, WindowPosition,
         WindowResizeConstraints,
     };
@@ -84,6 +84,8 @@ impl Plugin for WindowPlugin {
             .add_event::<WindowScaleFactorChanged>()
             .add_event::<WindowBackendScaleFactorChanged>()
             .add_event::<FileDragAndDrop>()
+            .add_event::<OpenFile>()
+            .add_event::<AppLifecycle>()
             .add_event::<WindowMoved>();
 
         if let Some(primary_window) = &self.primary_window {

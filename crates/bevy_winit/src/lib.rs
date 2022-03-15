@@ -273,6 +273,17 @@ impl Default for WinitPersistentState {
     }
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct WinitState {
+    active: bool,
+}
+
+impl WinitState {
+    pub fn is_active(&self) -> bool {
+        self.active
+    }
+}
+
 #[cfg(target_os = "ios")]
 pub struct Idiom(pub winit::platform::ios::Idiom);
 
@@ -288,6 +299,7 @@ pub fn winit_runner(mut app: App) {
     let mut winit_state = WinitPersistentState::default();
     app.world
         .insert_non_send_resource(event_loop.create_proxy());
+    app.world.init_resource::<WinitState>();
 
     let return_from_run = app.world.resource::<WinitSettings>().return_from_run;
 
@@ -669,6 +681,10 @@ pub fn winit_runner(mut app: App) {
                 events.send(OpenFile { path_buf });
             }
             event::Event::MainEventsCleared => {
+                let mut winit_state_resource = app.world.get_resource_mut::<WinitState>().unwrap();
+                if winit_state_resource.active != winit_state.active {
+                    winit_state_resource.active = winit_state.active;
+                }
                 let (winit_config, window_focused_query) = focused_window_state.get(&app.world);
 
                 let update = if winit_state.active {

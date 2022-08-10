@@ -273,7 +273,7 @@ impl Default for WinitPersistentState {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, Resource)]
 pub struct WinitState {
     active: bool,
 }
@@ -285,6 +285,7 @@ impl WinitState {
 }
 
 #[cfg(target_os = "ios")]
+#[derive(Resource)]
 pub struct Idiom(pub winit::platform::ios::Idiom);
 
 pub fn winit_runner(mut app: App) {

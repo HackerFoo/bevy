@@ -156,7 +156,7 @@ pub struct VisibilityBundle {
 }
 
 /// Use this component to opt-out of built-in frustum culling for Mesh entities
-#[derive(Component, Default)]
+#[derive(Component)]
 pub struct NoFrustumCulling;
 
 /// Collection of entities visible from the current view.

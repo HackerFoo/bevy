@@ -215,6 +215,22 @@ pub enum FileDragAndDrop {
     HoveredFileCancelled { id: WindowId },
 }
 
+/// An event that indicates the OS has requested the app to open a file.
+#[derive(Debug, Clone)]
+pub struct OpenFile {
+    pub path_buf: PathBuf,
+}
+
+/// An event that indicates the current state of the app lifecycle.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AppLifecycle {
+    Suspended,
+    Resumed,
+    Background,
+    Foreground,
+    MemoryWarning,
+}
+
 /// An event that is sent when a window is repositioned in physical pixels.
 #[derive(Debug, Clone, PartialEq, Eq, Reflect, FromReflect)]
 #[reflect(Debug, PartialEq)]

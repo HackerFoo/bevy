@@ -146,7 +146,11 @@ pub struct PerspectiveProjection {
 
 impl CameraProjection for PerspectiveProjection {
     fn get_projection_matrix(&self) -> Mat4 {
-        Mat4::perspective_infinite_reverse_rh(self.fov, self.aspect_ratio, self.near)
+        Mat4::perspective_infinite_reverse_rh(
+            self.fov / self.aspect_ratio.sqrt(),
+            self.aspect_ratio,
+            self.near,
+        )
     }
 
     fn update(&mut self, width: f32, height: f32) {

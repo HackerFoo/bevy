@@ -511,6 +511,7 @@ impl RenderAsset for Image {
         SRes<RenderQueue>,
         SRes<DefaultImageSampler>,
     );
+    type Data = ();
 
     /// Clones the Image.
     fn extract_asset(&self) -> Self::ExtractedAsset {
@@ -521,6 +522,7 @@ impl RenderAsset for Image {
     fn prepare_asset(
         image: Self::ExtractedAsset,
         (render_device, render_queue, default_sampler): &mut SystemParamItem<Self::Param>,
+        _data: &mut Self::Data,
     ) -> Result<Self::PreparedAsset, PrepareAssetError<Self::ExtractedAsset>> {
         let texture = render_device.create_texture_with_data(
             render_queue,

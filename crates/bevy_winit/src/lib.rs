@@ -27,8 +27,8 @@ use bevy_utils::{
     Instant,
 };
 use bevy_window::{
-    exit_on_all_closed, CursorEntered, CursorLeft, CursorMoved, FileDragAndDrop, Ime,
-    ReceivedCharacter, RequestRedraw, Window, WindowBackendScaleFactorChanged,
+    exit_on_all_closed, AppLifecycle, CursorEntered, CursorLeft, CursorMoved, FileDragAndDrop, Ime,
+    OpenFile, ReceivedCharacter, RequestRedraw, Window, WindowBackendScaleFactorChanged,
     WindowCloseRequested, WindowCreated, WindowFocused, WindowMoved, WindowResized,
     WindowScaleFactorChanged,
 };
@@ -48,6 +48,9 @@ use crate::web_resize::{CanvasParentResizeEventChannel, CanvasParentResizePlugin
 
 #[cfg(target_os = "android")]
 pub static ANDROID_APP: once_cell::sync::OnceCell<AndroidApp> = once_cell::sync::OnceCell::new();
+
+#[cfg(target_os = "ios")]
+use winit::platform::ios::EventLoopExtIOS;
 
 #[derive(Default)]
 pub struct WinitPlugin;
@@ -270,6 +273,21 @@ impl Default for WinitPersistentState {
     }
 }
 
+#[derive(Debug, Clone, Copy, Default, Resource)]
+pub struct WinitState {
+    active: bool,
+}
+
+impl WinitState {
+    pub fn is_active(&self) -> bool {
+        self.active
+    }
+}
+
+#[cfg(target_os = "ios")]
+#[derive(Resource)]
+pub struct Idiom(pub winit::platform::ios::Idiom);
+
 pub fn winit_runner(mut app: App) {
     // We remove this so that we have ownership over it.
     let mut event_loop = app
@@ -282,9 +300,14 @@ pub fn winit_runner(mut app: App) {
     let mut winit_state = WinitPersistentState::default();
     app.world
         .insert_non_send_resource(event_loop.create_proxy());
+    app.world.init_resource::<WinitState>();
 
     let return_from_run = app.world.resource::<WinitSettings>().return_from_run;
 
+    #[cfg(target_os = "ios")]
+    {
+        app.world.insert_resource(Idiom(event_loop.idiom()))
+    }
     trace!("Entering winit event loop");
 
     let mut focused_window_state: SystemState<(Res<WinitSettings>, Query<&Window>)> =
@@ -541,6 +564,7 @@ pub fn winit_runner(mut app: App) {
                             window: window_entity,
                             focused,
                         });
+                        winit_state.active = focused;
                     }
                     WindowEvent::DroppedFile(path_buf) => {
                         file_drag_and_drop_events.send(FileDragAndDrop::DroppedFile {
@@ -608,6 +632,11 @@ pub fn winit_runner(mut app: App) {
                 });
             }
             event::Event::Suspended => {
+                let mut events = app
+                    .world
+                    .get_resource_mut::<Events<AppLifecycle>>()
+                    .unwrap();
+                events.send(AppLifecycle::Suspended);
                 winit_state.active = false;
                 #[cfg(target_os = "android")]
                 {
@@ -618,9 +647,45 @@ pub fn winit_runner(mut app: App) {
                 }
             }
             event::Event::Resumed => {
+                let mut events = app
+                    .world
+                    .get_resource_mut::<Events<AppLifecycle>>()
+                    .unwrap();
+                events.send(AppLifecycle::Resumed);
                 winit_state.active = true;
             }
+            event::Event::Background => {
+                let mut events = app
+                    .world
+                    .get_resource_mut::<Events<AppLifecycle>>()
+                    .unwrap();
+                events.send(AppLifecycle::Background);
+                winit_state.active = false;
+            }
+            event::Event::Foreground => {
+                let mut events = app
+                    .world
+                    .get_resource_mut::<Events<AppLifecycle>>()
+                    .unwrap();
+                events.send(AppLifecycle::Foreground);
+                winit_state.active = true;
+            }
+            event::Event::MemoryWarning => {
+                let mut events = app
+                    .world
+                    .get_resource_mut::<Events<AppLifecycle>>()
+                    .unwrap();
+                events.send(AppLifecycle::MemoryWarning);
+            }
+            event::Event::OpenFile(path_buf) => {
+                let mut events = app.world.get_resource_mut::<Events<OpenFile>>().unwrap();
+                events.send(OpenFile { path_buf });
+            }
             event::Event::MainEventsCleared => {
+                let mut winit_state_resource = app.world.get_resource_mut::<WinitState>().unwrap();
+                if winit_state_resource.active != winit_state.active {
+                    winit_state_resource.active = winit_state.active;
+                }
                 let (winit_config, window_focused_query) = focused_window_state.get(&app.world);
 
                 let update = if winit_state.active {

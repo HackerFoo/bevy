@@ -598,11 +598,11 @@ impl Default for AmbientLight {
 }
 
 /// Add this component to make a [`Mesh`](bevy_render::mesh::Mesh) not cast shadows.
-#[derive(Component, Reflect, Default, Clone, Copy)]
+#[derive(Component, Reflect, Default)]
 #[reflect(Component, Default)]
 pub struct NotShadowCaster;
 /// Add this component to make a [`Mesh`](bevy_render::mesh::Mesh) not receive shadows.
-#[derive(Component, Reflect, Default, Clone, Copy)]
+#[derive(Component, Reflect, Default)]
 #[reflect(Component, Default)]
 pub struct NotShadowReceiver;
 

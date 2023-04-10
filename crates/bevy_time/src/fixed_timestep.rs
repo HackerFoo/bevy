@@ -34,7 +34,6 @@ pub struct FixedTime {
     /// Defaults to 1/60th of a second.
     /// To configure this value, simply mutate or overwrite this resource.
     pub period: Duration,
-    pub accumulated_max: Duration,
 }
 
 impl FixedTime {
@@ -43,16 +42,6 @@ impl FixedTime {
         FixedTime {
             accumulated: Duration::ZERO,
             period,
-            accumulated_max: Duration::MAX,
-        }
-    }
-
-    /// Creates a new [`FixedTime`] struct that accumulates up to the specified number of steps
-    pub fn new_with_max_steps(period: Duration, steps: u32) -> Self {
-        FixedTime {
-            accumulated: Duration::ZERO,
-            period,
-            accumulated_max: period * steps.max(1),
         }
     }
 
@@ -61,13 +50,12 @@ impl FixedTime {
         FixedTime {
             accumulated: Duration::ZERO,
             period: Duration::from_secs_f32(period),
-            accumulated_max: Duration::MAX,
         }
     }
 
     /// Adds the `delta_time` to the accumulated time so far.
     pub fn tick(&mut self, delta_time: Duration) {
-        self.accumulated = self.accumulated_max.min(self.accumulated + delta_time);
+        self.accumulated += delta_time;
     }
 
     /// Returns the current amount of accumulated time
@@ -96,7 +84,6 @@ impl Default for FixedTime {
         FixedTime {
             accumulated: Duration::ZERO,
             period: Duration::from_secs_f32(1. / 60.),
-            accumulated_max: Duration::MAX,
         }
     }
 }

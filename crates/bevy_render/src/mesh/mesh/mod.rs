@@ -254,10 +254,7 @@ impl Mesh {
     ///
     /// # Panics
     /// Panics if the attributes have different vertex counts.
-    pub fn get_vertex_buffer_data<'a>(
-        &self,
-        attributes_interleaved_buffer: &'a mut Vec<u8>,
-    ) -> Option<&'a mut Vec<u8>> {
+    pub fn get_vertex_buffer_data(&self) -> Vec<u8> {
         let mut vertex_size = 0;
         for attribute_data in self.attributes.values() {
             let vertex_format = attribute_data.attribute.format;
@@ -265,11 +262,7 @@ impl Mesh {
         }
 
         let vertex_count = self.count_vertices();
-        attributes_interleaved_buffer.clear();
-        attributes_interleaved_buffer
-            .try_reserve(vertex_count * vertex_size)
-            .ok()?;
-        attributes_interleaved_buffer.resize(vertex_count * vertex_size, 0);
+        let mut attributes_interleaved_buffer = vec![0; vertex_count * vertex_size];
         // bundle into interleaved buffers
         let mut attribute_offset = 0;
         for attribute_data in self.attributes.values() {
@@ -286,7 +279,7 @@ impl Mesh {
             attribute_offset += attribute_size;
         }
 
-        Some(attributes_interleaved_buffer)
+        attributes_interleaved_buffer
     }
 
     /// Duplicates the vertex attributes so that no vertices are shared.
@@ -839,7 +832,6 @@ impl RenderAsset for Mesh {
     type ExtractedAsset = Mesh;
     type PreparedAsset = GpuMesh;
     type Param = SRes<RenderDevice>;
-    type Data = Vec<u8>;
 
     /// Clones the mesh.
     fn extract_asset(&self) -> Self::ExtractedAsset {
@@ -850,11 +842,8 @@ impl RenderAsset for Mesh {
     fn prepare_asset(
         mesh: Self::ExtractedAsset,
         render_device: &mut SystemParamItem<Self::Param>,
-        data: &mut Self::Data,
     ) -> Result<Self::PreparedAsset, PrepareAssetError<Self::ExtractedAsset>> {
-        let vertex_buffer_data = mesh
-            .get_vertex_buffer_data(data)
-            .ok_or(PrepareAssetError::Abort)?;
+        let vertex_buffer_data = mesh.get_vertex_buffer_data();
         let vertex_buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
             usage: BufferUsages::VERTEX,
             label: Some("Mesh Vertex Buffer"),

@@ -726,5 +726,5 @@ macro_rules! impl_system_set_collection {
     }
 }
 
-all_tuples!(impl_system_collection, 0, 40, P, S);
-all_tuples!(impl_system_set_collection, 0, 40, S);
+all_tuples!(impl_system_collection, 0, 15, P, S);
+all_tuples!(impl_system_set_collection, 0, 15, S);

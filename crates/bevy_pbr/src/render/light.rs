@@ -15,7 +15,7 @@ use bevy_render::{
     color::Color,
     mesh::Mesh,
     render_asset::RenderAssets,
-    render_graph::{Node, NodeRunError, RenderGraphContext, SlotInfo, SlotType},
+    render_graph::{Node, NodeRunError, RenderGraphContext},
     render_phase::{
         CachedRenderPipelinePhaseItem, DrawFunctionId, DrawFunctions, PhaseItem, RenderPhase,
     },
@@ -26,7 +26,6 @@ use bevy_render::{
     Extract,
 };
 use bevy_transform::{components::GlobalTransform, prelude::Transform};
-use bevy_utils::FloatOrd;
 use bevy_utils::{
     tracing::{error, warn},
     HashMap,
@@ -473,37 +472,43 @@ pub(crate) struct CubeMapFace {
     pub(crate) up: Vec3,
 }
 
-// see https://www.khronos.org/opengl/wiki/Cubemap_Texture
+// Cubemap faces are [+X, -X, +Y, -Y, +Z, -Z], per https://www.w3.org/TR/webgpu/#texture-view-creation
+// Note: Cubemap coordinates are left-handed y-up, unlike the rest of Bevy.
+// See https://registry.khronos.org/vulkan/specs/1.2/html/chap16.html#_cube_map_face_selection
+//
+// For each cubemap face, we take care to specify the appropriate target/up axis such that the rendered
+// texture using Bevy's right-handed y-up coordinate space matches the expected cubemap face in
+// left-handed y-up cubemap coordinates.
 pub(crate) const CUBE_MAP_FACES: [CubeMapFace; 6] = [
-    // 0 	GL_TEXTURE_CUBE_MAP_POSITIVE_X
-    CubeMapFace {
-        target: Vec3::NEG_X,
-        up: Vec3::NEG_Y,
-    },
-    // 1 	GL_TEXTURE_CUBE_MAP_NEGATIVE_X
+    // +X
     CubeMapFace {
         target: Vec3::X,
-        up: Vec3::NEG_Y,
+        up: Vec3::Y,
     },
-    // 2 	GL_TEXTURE_CUBE_MAP_POSITIVE_Y
+    // -X
     CubeMapFace {
-        target: Vec3::NEG_Y,
-        up: Vec3::Z,
+        target: Vec3::NEG_X,
+        up: Vec3::Y,
     },
-    // 3 	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
+    // +Y
     CubeMapFace {
         target: Vec3::Y,
+        up: Vec3::Z,
+    },
+    // -Y
+    CubeMapFace {
+        target: Vec3::NEG_Y,
         up: Vec3::NEG_Z,
     },
-    // 4 	GL_TEXTURE_CUBE_MAP_POSITIVE_Z
+    // +Z (with left-handed conventions, pointing forwards)
     CubeMapFace {
         target: Vec3::NEG_Z,
-        up: Vec3::NEG_Y,
+        up: Vec3::Y,
     },
-    // 5 	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+    // -Z (with left-handed conventions, pointing backwards)
     CubeMapFace {
         target: Vec3::Z,
-        up: Vec3::NEG_Y,
+        up: Vec3::Y,
     },
 ];
 
@@ -636,7 +641,7 @@ pub(crate) fn spot_light_view_matrix(transform: &GlobalTransform) -> Mat4 {
 }
 
 pub(crate) fn spot_light_projection_matrix(angle: f32) -> Mat4 {
-    // spot light projection FOV is 2x the angle from spot light centre to outer edge
+    // spot light projection FOV is 2x the angle from spot light center to outer edge
     Mat4::perspective_infinite_reverse_rh(angle * 2.0, 1.0, POINT_LIGHT_NEAR_Z)
 }
 
@@ -1653,7 +1658,7 @@ pub struct Shadow {
 }
 
 impl PhaseItem for Shadow {
-    type SortKey = FloatOrd;
+    type SortKey = usize;
 
     #[inline]
     fn entity(&self) -> Entity {
@@ -1662,7 +1667,7 @@ impl PhaseItem for Shadow {
 
     #[inline]
     fn sort_key(&self) -> Self::SortKey {
-        FloatOrd(self.distance)
+        self.pipeline.id()
     }
 
     #[inline]
@@ -1672,7 +1677,10 @@ impl PhaseItem for Shadow {
 
     #[inline]
     fn sort(items: &mut [Self]) {
-        radsort::sort_by_key(items, |item| item.distance);
+        // The shadow phase is sorted by pipeline id for performance reasons.
+        // Grouping all draw commands using the same pipeline together performs
+        // better than rebinding everything at a high rate.
+        radsort::sort_by_key(items, |item| item.pipeline.id());
     }
 }
 
@@ -1689,8 +1697,6 @@ pub struct ShadowPassNode {
 }
 
 impl ShadowPassNode {
-    pub const IN_VIEW: &'static str = "view";
-
     pub fn new(world: &mut World) -> Self {
         Self {
             main_view_query: QueryState::new(world),
@@ -1700,10 +1706,6 @@ impl ShadowPassNode {
 }
 
 impl Node for ShadowPassNode {
-    fn input(&self) -> Vec<SlotInfo> {
-        vec![SlotInfo::new(ShadowPassNode::IN_VIEW, SlotType::Entity)]
-    }
-
     fn update(&mut self, world: &mut World) {
         self.main_view_query.update_archetypes(world);
         self.view_light_query.update_archetypes(world);
@@ -1715,7 +1717,7 @@ impl Node for ShadowPassNode {
         render_context: &mut RenderContext,
         world: &World,
     ) -> Result<(), NodeRunError> {
-        let view_entity = graph.get_input_entity(Self::IN_VIEW)?;
+        let view_entity = graph.view_entity();
         if let Ok(view_lights) = self.main_view_query.get_manual(world, view_entity) {
             for view_light_entity in view_lights.lights.iter().copied() {
                 let (view_light, shadow_phase) = self

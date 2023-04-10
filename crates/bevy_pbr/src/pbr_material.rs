@@ -168,7 +168,7 @@ pub struct StandardMaterial {
     /// This is usually generated and stored automatically ("baked") by 3D-modelling software.
     ///
     /// Typically, steep concave parts of a model (such as the armpit of a shirt) are darker,
-    /// because they have little exposed to light.
+    /// because they have little exposure to light.
     /// An occlusion map specifies those parts of the model that light doesn't reach well.
     ///
     /// The material will be less lit in places where this texture is dark.
@@ -401,7 +401,7 @@ impl AsBindGroupShaderType<StandardMaterialUniform> for StandardMaterial {
 
         StandardMaterialUniform {
             base_color: self.base_color.as_linear_rgba_f32().into(),
-            emissive: self.emissive.into(),
+            emissive: self.emissive.as_linear_rgba_f32().into(),
             roughness: self.perceptual_roughness,
             metallic: self.metallic,
             reflectance: self.reflectance,

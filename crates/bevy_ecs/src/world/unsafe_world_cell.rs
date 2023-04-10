@@ -6,7 +6,7 @@ use crate::{
     bundle::Bundles,
     change_detection::{MutUntyped, TicksMut},
     component::{
-        ComponentId, ComponentStorage, ComponentTicks, Components, StorageType, TickCells,
+        ComponentId, ComponentStorage, ComponentTicks, Components, StorageType, Tick, TickCells,
     },
     entity::{Entities, Entity, EntityLocation},
     prelude::Component,
@@ -144,7 +144,7 @@ impl<'w> UnsafeWorldCell<'w> {
     /// # Safety
     /// - must not be used in a way that would conflict with any
     ///   live exclusive borrows on world data
-    unsafe fn unsafe_world(self) -> &'w World {
+    pub(crate) unsafe fn unsafe_world(self) -> &'w World {
         // SAFETY:
         // - caller ensures that the returned `&World` is not used in a way that would conflict
         //   with any existing mutable borrows of world data
@@ -185,28 +185,27 @@ impl<'w> UnsafeWorldCell<'w> {
 
     /// Reads the current change tick of this world.
     #[inline]
-    pub fn read_change_tick(self) -> u32 {
+    pub fn read_change_tick(self) -> Tick {
         // SAFETY:
         // - we only access world metadata
-        unsafe { self.world_metadata() }
+        let tick = unsafe { self.world_metadata() }
             .change_tick
-            .load(Ordering::Acquire)
+            .load(Ordering::Acquire);
+        Tick::new(tick)
     }
 
     #[inline]
-    pub fn last_change_tick(self) -> u32 {
+    pub fn last_change_tick(self) -> Tick {
         // SAFETY:
         // - we only access world metadata
         unsafe { self.world_metadata() }.last_change_tick
     }
 
     #[inline]
-    pub fn increment_change_tick(self) -> u32 {
+    pub fn increment_change_tick(self) -> Tick {
         // SAFETY:
         // - we only access world metadata
-        unsafe { self.world_metadata() }
-            .change_tick
-            .fetch_add(1, Ordering::AcqRel)
+        unsafe { self.world_metadata() }.increment_change_tick()
     }
 
     /// Shorthand helper function for getting the [`ArchetypeComponentId`] for a resource.
@@ -655,8 +654,8 @@ impl<'w> UnsafeEntityCell<'w> {
     #[inline]
     pub(crate) unsafe fn get_mut_using_ticks<T: Component>(
         &self,
-        last_change_tick: u32,
-        change_tick: u32,
+        last_change_tick: Tick,
+        change_tick: Tick,
     ) -> Option<Mut<'w, T>> {
         let component_id = self.world.components().get_id(TypeId::of::<T>())?;
 

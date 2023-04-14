@@ -1196,7 +1196,7 @@ pub(crate) fn assign_lights_to_clusters(
     lights.extend(
         point_lights_query
             .iter()
-            .filter(|(.., visibility)| visibility.is_visible())
+            .filter(|(.., light, visibility)| visibility.is_visible() && light.intensity > 0.)
             .map(
                 |(entity, transform, point_light, _visibility)| PointLightAssignmentData {
                     entity,
@@ -1210,7 +1210,7 @@ pub(crate) fn assign_lights_to_clusters(
     lights.extend(
         spot_lights_query
             .iter()
-            .filter(|(.., visibility)| visibility.is_visible())
+            .filter(|(.., light, visibility)| visibility.is_visible() && light.intensity > 0.)
             .map(
                 |(entity, transform, spot_light, _visibility)| PointLightAssignmentData {
                     entity,

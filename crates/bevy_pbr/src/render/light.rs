@@ -1123,8 +1123,8 @@ pub fn prepare_lights(
             for (cascade_index, (cascade, bound)) in light
                 .cascades
                 .get(&entity)
-                .unwrap()
                 .iter()
+                .flat_map(|c| c.iter())
                 .take(MAX_CASCADES_PER_LIGHT)
                 .zip(&light.cascade_shadow_config.bounds)
                 .enumerate()

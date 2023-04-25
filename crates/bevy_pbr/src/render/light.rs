@@ -224,7 +224,7 @@ pub const MAX_DIRECTIONAL_LIGHTS: usize = 10;
 pub const MAX_CASCADES_PER_LIGHT: usize = 4;
 #[cfg(feature = "webgl")]
 pub const MAX_CASCADES_PER_LIGHT: usize = 1;
-pub const SHADOW_FORMAT: TextureFormat = TextureFormat::Depth32Float;
+pub const SHADOW_FORMAT: TextureFormat = TextureFormat::Depth16Unorm;
 
 #[derive(Resource, Clone)]
 pub struct ShadowSamplers {

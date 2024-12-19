@@ -117,6 +117,7 @@ pub struct Camera {
     /// "write their results on top" of previous camera results, and include them as a part of their render results. This is enabled by default to ensure
     /// cameras with MSAA enabled layer their results in the same way as cameras without MSAA enabled by default.
     pub msaa_writeback: bool,
+    pub render_shadows: bool,
 }
 
 impl Default for Camera {
@@ -130,6 +131,7 @@ impl Default for Camera {
             output_mode: Default::default(),
             hdr: false,
             msaa_writeback: true,
+            render_shadows: true,
         }
     }
 }
@@ -568,6 +570,7 @@ pub struct ExtractedCamera {
     pub order: isize,
     pub output_mode: CameraOutputMode,
     pub msaa_writeback: bool,
+    pub render_shadows: bool,
     pub sorted_camera_index_for_target: usize,
 }
 
@@ -624,6 +627,7 @@ pub fn extract_cameras(
                     order: camera.order,
                     output_mode: camera.output_mode,
                     msaa_writeback: camera.msaa_writeback,
+                    render_shadows: camera.render_shadows,
                     // this will be set in sort_cameras
                     sorted_camera_index_for_target: 0,
                 },

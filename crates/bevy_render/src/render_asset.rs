@@ -11,6 +11,7 @@ use std::marker::PhantomData;
 
 pub enum PrepareAssetError<E: Send + Sync + 'static> {
     RetryNextUpdate(E),
+    Abort,
 }
 
 /// Describes how an asset gets extracted and prepared for rendering.
@@ -31,12 +32,14 @@ pub trait RenderAsset: Asset {
     /// For convenience use the [`lifetimeless`](bevy_ecs::system::lifetimeless) [`SystemParam`].
     type Param: SystemParam;
     /// Converts the asset into a [`RenderAsset::ExtractedAsset`].
+    type Data: Default;
     fn extract_asset(&self) -> Self::ExtractedAsset;
     /// Prepares the `extracted asset` for the GPU by transforming it into
     /// a [`RenderAsset::PreparedAsset`]. Therefore ECS data may be accessed via the `param`.
     fn prepare_asset(
         extracted_asset: Self::ExtractedAsset,
         param: &mut SystemParamItem<Self::Param>,
+        data: &mut Self::Data,
     ) -> Result<Self::PreparedAsset, PrepareAssetError<Self::ExtractedAsset>>;
 }
 
@@ -188,14 +191,16 @@ pub fn prepare_assets<R: RenderAsset>(
 ) {
     let mut param = param.into_inner();
     let queued_assets = std::mem::take(&mut prepare_next_frame.assets);
+    let mut data = Default::default();
     for (handle, extracted_asset) in queued_assets {
-        match R::prepare_asset(extracted_asset, &mut param) {
+        match R::prepare_asset(extracted_asset, &mut param, &mut data) {
             Ok(prepared_asset) => {
                 render_assets.insert(handle, prepared_asset);
             }
             Err(PrepareAssetError::RetryNextUpdate(extracted_asset)) => {
                 prepare_next_frame.assets.push((handle, extracted_asset));
             }
+            Err(PrepareAssetError::Abort) => {}
         }
     }
 
@@ -204,13 +209,14 @@ pub fn prepare_assets<R: RenderAsset>(
     }
 
     for (handle, extracted_asset) in std::mem::take(&mut extracted_assets.extracted) {
-        match R::prepare_asset(extracted_asset, &mut param) {
+        match R::prepare_asset(extracted_asset, &mut param, &mut data) {
             Ok(prepared_asset) => {
                 render_assets.insert(handle, prepared_asset);
             }
             Err(PrepareAssetError::RetryNextUpdate(extracted_asset)) => {
                 prepare_next_frame.assets.push((handle, extracted_asset));
             }
+            Err(PrepareAssetError::Abort) => {}
         }
     }
 }

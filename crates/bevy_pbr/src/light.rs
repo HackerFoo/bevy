@@ -252,8 +252,6 @@ pub struct CascadeShadowConfig {
     pub overlap_proportion: f32,
     /// The (positive) distance to the near boundary of the first cascade.
     pub minimum_distance: f32,
-    /// Whether the cascades are user controlled
-    pub manual_cascades: bool,
 }
 
 impl Default for CascadeShadowConfig {
@@ -349,7 +347,6 @@ impl CascadeShadowConfigBuilder {
             ),
             overlap_proportion: self.overlap_proportion,
             minimum_distance: self.minimum_distance,
-            manual_cascades: false,
         }
     }
 }
@@ -387,21 +384,21 @@ impl From<CascadeShadowConfigBuilder> for CascadeShadowConfig {
 #[reflect(Component)]
 pub struct Cascades {
     /// Map from a view to the configuration of each of its [`Cascade`]s.
-    pub cascades: HashMap<Entity, Vec<Cascade>>,
+    pub(crate) cascades: HashMap<Entity, Vec<Cascade>>,
 }
 
 #[derive(Clone, Debug, Default, Reflect, FromReflect)]
 pub struct Cascade {
     /// The transform of the light, i.e. the view to world matrix.
-    pub view_transform: Mat4,
+    pub(crate) view_transform: Mat4,
     /// The orthographic projection for this cascade.
-    pub projection: Mat4,
+    pub(crate) projection: Mat4,
     /// The view-projection matrix for this cascade, converting world space into light clip space.
     /// Importantly, this is derived and stored separately from `view_transform` and `projection` to
     /// ensure shadow stability.
-    pub view_projection: Mat4,
+    pub(crate) view_projection: Mat4,
     /// Size of each shadow map texel in world units.
-    pub texel_size: f32,
+    pub(crate) texel_size: f32,
 }
 
 pub fn update_directional_light_cascades(
@@ -426,7 +423,7 @@ pub fn update_directional_light_cascades(
         .collect::<Vec<_>>();
 
     for (transform, directional_light, cascades_config, mut cascades) in lights.iter_mut() {
-        if !directional_light.shadows_enabled || cascades_config.manual_cascades {
+        if !directional_light.shadows_enabled {
             continue;
         }
 
@@ -601,11 +598,11 @@ impl Default for AmbientLight {
 }
 
 /// Add this component to make a [`Mesh`](bevy_render::mesh::Mesh) not cast shadows.
-#[derive(Component, Reflect, Default, Clone, Copy)]
+#[derive(Component, Reflect, Default)]
 #[reflect(Component, Default)]
 pub struct NotShadowCaster;
 /// Add this component to make a [`Mesh`](bevy_render::mesh::Mesh) not receive shadows.
-#[derive(Component, Reflect, Default, Clone, Copy)]
+#[derive(Component, Reflect, Default)]
 #[reflect(Component, Default)]
 pub struct NotShadowReceiver;
 
@@ -1199,7 +1196,7 @@ pub(crate) fn assign_lights_to_clusters(
     lights.extend(
         point_lights_query
             .iter()
-            .filter(|(.., light, visibility)| visibility.is_visible() && light.intensity > 0.)
+            .filter(|(.., visibility)| visibility.is_visible())
             .map(
                 |(entity, transform, point_light, _visibility)| PointLightAssignmentData {
                     entity,
@@ -1213,7 +1210,7 @@ pub(crate) fn assign_lights_to_clusters(
     lights.extend(
         spot_lights_query
             .iter()
-            .filter(|(.., light, visibility)| visibility.is_visible() && light.intensity > 0.)
+            .filter(|(.., visibility)| visibility.is_visible())
             .map(
                 |(entity, transform, spot_light, _visibility)| PointLightAssignmentData {
                     entity,

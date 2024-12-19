@@ -65,7 +65,7 @@ impl Node for MainTransparentPass3dNode {
                 // NOTE: The transparent pass loads the color buffer as well as overwriting it where appropriate.
                 color_attachments: &[Some(target.get_color_attachment(Operations {
                     load: LoadOp::Load,
-                    store: false,
+                    store: true,
                 }))],
                 depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
                     view: &depth.view,
@@ -77,7 +77,7 @@ impl Node for MainTransparentPass3dNode {
                     // transparent ones.
                     depth_ops: Some(Operations {
                         load: LoadOp::Load,
-                        store: false,
+                        store: true,
                     }),
                     stencil_ops: None,
                 }),

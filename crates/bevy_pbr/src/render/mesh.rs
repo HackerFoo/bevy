@@ -18,7 +18,7 @@ use bevy_ecs::{
     query::ROQueryItem,
     system::{lifetimeless::*, SystemParamItem, SystemState},
 };
-use bevy_math::{Mat4, Vec2};
+use bevy_math::{Mat3A, Mat4, Vec2};
 use bevy_reflect::TypeUuid;
 use bevy_render::{
     extract_component::{ComponentUniforms, DynamicUniformIndex, UniformComponentPlugin},
@@ -134,6 +134,9 @@ bitflags::bitflags! {
     #[repr(transparent)]
     struct MeshFlags: u32 {
         const SHADOW_RECEIVER            = (1 << 0);
+        // Indicates the sign of the determinant of the 3x3 model matrix. If the sign is positive,
+        // then the flag should be set, else it should not be set.
+        const SIGN_DETERMINANT_MODEL_3X3 = (1 << 31);
         const NONE                       = 0;
         const UNINITIALIZED              = 0xFFFF;
     }
@@ -164,11 +167,14 @@ pub fn extract_meshes(
     {
         let transform = transform.compute_matrix();
         let previous_transform = previous_transform.map(|t| t.0).unwrap_or(transform);
-        let flags = if not_receiver.is_some() {
+        let mut flags = if not_receiver.is_some() {
             MeshFlags::empty()
         } else {
             MeshFlags::SHADOW_RECEIVER
         };
+        if Mat3A::from_mat4(transform).determinant().is_sign_positive() {
+            flags |= MeshFlags::SIGN_DETERMINANT_MODEL_3X3;
+        }
         let uniform = MeshUniform {
             flags: flags.bits,
             transform,
@@ -826,7 +832,7 @@ impl SpecializedMeshPipeline for MeshPipeline {
                 strip_index_format: None,
             },
             depth_stencil: Some(DepthStencilState {
-                format: TextureFormat::Depth16Unorm,
+                format: TextureFormat::Depth32Float,
                 depth_write_enabled,
                 depth_compare: CompareFunction::GreaterEqual,
                 stencil: StencilState {

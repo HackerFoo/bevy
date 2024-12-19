@@ -402,7 +402,7 @@ macro_rules! impl_system_collection {
     }
 }
 
-all_tuples!(impl_system_collection, 1, 40, P, S);
+all_tuples!(impl_system_collection, 1, 20, P, S);
 
 /// A [`SystemSet`] with scheduling metadata.
 pub struct SystemSetConfig {
@@ -717,4 +717,4 @@ macro_rules! impl_system_set_collection {
     }
 }
 
-all_tuples!(impl_system_set_collection, 0, 40, S);
+all_tuples!(impl_system_set_collection, 0, 15, S);

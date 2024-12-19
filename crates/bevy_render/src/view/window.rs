@@ -48,7 +48,7 @@ pub struct ExtractedWindow {
     pub present_mode: PresentMode,
     pub swap_chain_texture: Option<TextureView>,
     pub swap_chain_texture_format: Option<TextureFormat>,
-    pub size_change_pending: bool,
+    pub size_changed: bool,
     pub present_mode_changed: bool,
     pub alpha_mode: CompositeAlphaMode,
 }
@@ -88,36 +88,27 @@ fn extract_windows(
             window.resolution.physical_height().max(1),
         );
 
-        let extracted_window = extracted_windows
-            .entry(entity)
-            .and_modify(|extracted_window| {
-                // NOTE: Drop the swap chain frame here
-                extracted_window.swap_chain_texture = None;
-                if new_width != extracted_window.physical_width
-                    || new_height != extracted_window.physical_height
-                {
-                    extracted_window.physical_width = new_width;
-                    extracted_window.physical_height = new_height;
-                    extracted_window.size_change_pending = true;
-                }
-            })
-            .or_insert(ExtractedWindow {
-                entity,
-                handle: handle.clone(),
-                physical_width: new_width,
-                physical_height: new_height,
-                present_mode: window.present_mode,
-                swap_chain_texture: None,
-                swap_chain_texture_format: None,
-                size_change_pending: true,
-                present_mode_changed: false,
-                alpha_mode: window.composite_alpha_mode,
-            });
+        let mut extracted_window = extracted_windows.entry(entity).or_insert(ExtractedWindow {
+            entity,
+            handle: handle.clone(),
+            physical_width: new_width,
+            physical_height: new_height,
+            present_mode: window.present_mode,
+            swap_chain_texture: None,
+            size_changed: false,
+            swap_chain_texture_format: None,
+            present_mode_changed: false,
+            alpha_mode: window.composite_alpha_mode,
+        });
 
         // NOTE: Drop the swap chain frame here
         extracted_window.swap_chain_texture = None;
-        extracted_window.present_mode_changed = window.present_mode != extracted_window.present_mode;
-        if extracted_window.size_change_pending {
+        extracted_window.size_changed = new_width != extracted_window.physical_width
+            || new_height != extracted_window.physical_height;
+        extracted_window.present_mode_changed =
+            window.present_mode != extracted_window.present_mode;
+
+        if extracted_window.size_changed {
             debug!(
                 "Window size changed from {}x{} to {}x{}",
                 extracted_window.physical_width,
@@ -125,6 +116,8 @@ fn extract_windows(
                 new_width,
                 new_height
             );
+            extracted_window.physical_width = new_width;
+            extracted_window.physical_height = new_height;
         }
 
         if extracted_window.present_mode_changed {
@@ -287,9 +280,8 @@ pub fn prepare_windows(
         let not_already_configured = window_surfaces.configured_windows.insert(window.entity);
 
         let surface = &surface_data.surface;
-        if not_already_configured || window.size_change_pending || window.present_mode_changed {
+        if not_already_configured || window.size_changed || window.present_mode_changed {
             render_device.configure_surface(surface, &surface_configuration);
-            window.size_change_pending = false;
             let frame = surface
                 .get_current_texture()
                 .expect("Error configuring surface");

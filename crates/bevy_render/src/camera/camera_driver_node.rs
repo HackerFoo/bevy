@@ -1,12 +1,12 @@
 use crate::{
-    camera::{ExtractedCamera, NormalizedRenderTarget, SortedCameras},
+    camera::{ClearColor, ExtractedCamera, NormalizedRenderTarget, SortedCameras},
     render_graph::{Node, NodeRunError, RenderGraphContext},
     renderer::RenderContext,
     view::ExtractedWindows,
 };
 use bevy_ecs::{prelude::QueryState, world::World};
 use bevy_utils::HashSet;
-use wgpu::{LoadOp, Operations, RenderPassColorAttachment, RenderPassDescriptor};
+use wgpu::{LoadOp, Operations, RenderPassColorAttachment, RenderPassDescriptor, StoreOp};
 
 pub struct CameraDriverNode {
     cameras: QueryState<&'static ExtractedCamera>,
@@ -31,19 +31,33 @@ impl Node for CameraDriverNode {
         world: &World,
     ) -> Result<(), NodeRunError> {
         let sorted_cameras = world.resource::<SortedCameras>();
+        let windows = world.resource::<ExtractedWindows>();
         let mut camera_windows = HashSet::new();
         for sorted_camera in &sorted_cameras.0 {
-            if let Ok(camera) = self.cameras.get_manual(world, sorted_camera.entity) {
-                if let Some(NormalizedRenderTarget::Window(window_ref)) = camera.target {
-                    camera_windows.insert(window_ref.entity());
+            let Ok(camera) = self.cameras.get_manual(world, sorted_camera.entity) else {
+                continue;
+            };
+
+            let mut run_graph = true;
+            if let Some(NormalizedRenderTarget::Window(window_ref)) = camera.target {
+                let window_entity = window_ref.entity();
+                if windows
+                    .windows
+                    .get(&window_entity)
+                    .is_some_and(|w| w.physical_width > 0 && w.physical_height > 0)
+                {
+                    camera_windows.insert(window_entity);
+                } else {
+                    // The window doesn't exist anymore or zero-sized so we don't need to run the graph
+                    run_graph = false;
                 }
-                graph.run_sub_graph(
-                    camera.render_graph.clone(),
-                    vec![],
-                    Some(sorted_camera.entity),
-                )?;
+            }
+            if run_graph {
+                graph.run_sub_graph(camera.render_graph, vec![], Some(sorted_camera.entity))?;
             }
         }
+
+        let clear_color_global = world.resource::<ClearColor>();
 
         // wgpu (and some backends) require doing work for swap chains if you call `get_current_texture()` and `present()`
         // This ensures that Bevy doesn't crash, even when there are no cameras (and therefore no work submitted).
@@ -52,7 +66,7 @@ impl Node for CameraDriverNode {
                 continue;
             }
 
-            let Some(swap_chain_texture) = &window.swap_chain_texture else {
+            let Some(swap_chain_texture) = &window.swap_chain_texture_view else {
                 continue;
             };
 
@@ -64,11 +78,13 @@ impl Node for CameraDriverNode {
                     view: swap_chain_texture,
                     resolve_target: None,
                     ops: Operations {
-                        load: LoadOp::Clear(wgpu::Color::BLACK),
-                        store: true,
+                        load: LoadOp::Clear(clear_color_global.to_linear().into()),
+                        store: StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
             };
 
             render_context

@@ -17,18 +17,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#import bevy_core_pipeline::fullscreen_vertex_shader
+#import bevy_core_pipeline::fullscreen_vertex_shader::FullscreenVertexOutput
 
 struct CASUniforms {
     sharpness: f32,
 };
 
-@group(0) @binding(0)
-var screenTexture: texture_2d<f32>;
-@group(0) @binding(1)
-var samp: sampler;
-@group(0) @binding(2)
-var<uniform> uniforms: CASUniforms;
+@group(0) @binding(0) var screenTexture: texture_2d<f32>;
+@group(0) @binding(1) var samp: sampler;
+@group(0) @binding(2) var<uniform> uniforms: CASUniforms;
 
 // This is set at the limit of providing unnatural results for sharpening.
 const FSR_RCAS_LIMIT = 0.1875;
@@ -68,7 +65,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let b = textureSample(screenTexture, samp, in.uv, vec2<i32>(0, -1)).rgb;
     let d = textureSample(screenTexture, samp, in.uv, vec2<i32>(-1, 0)).rgb;
     // We need the alpha value of the pixel we're working on for the output
-    let e = textureSample(screenTexture, samp, in.uv).rgbw;
+    let e = textureSample(screenTexture, samp, in.uv).rgba;
     let f = textureSample(screenTexture, samp, in.uv, vec2<i32>(1, 0)).rgb;
     let h = textureSample(screenTexture, samp, in.uv, vec2<i32>(0, 1)).rgb;
     // Min and max of ring.

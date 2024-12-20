@@ -24,7 +24,6 @@ use super::*;
 #[require(
     CubemapFrusta,
     CubemapVisibleEntities,
-    Transform,
     Visibility,
     VisibilityClass
 )]

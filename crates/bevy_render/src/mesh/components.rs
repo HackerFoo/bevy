@@ -98,7 +98,7 @@ impl AsAssetId for Mesh2d {
 /// ```
 #[derive(Component, Clone, Debug, Default, Deref, DerefMut, Reflect, PartialEq, Eq, From)]
 #[reflect(Component, Default)]
-#[require(Transform, Visibility, VisibilityClass)]
+#[require(Visibility, VisibilityClass)]
 #[component(on_add = view::add_visibility_class::<Mesh3d>)]
 pub struct Mesh3d(pub Handle<Mesh>);
 

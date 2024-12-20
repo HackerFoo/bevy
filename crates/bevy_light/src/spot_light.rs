@@ -29,7 +29,7 @@ use crate::cluster::ClusterVisibilityClass;
 /// component on a child entity instead.
 #[derive(Component, Debug, Clone, Copy, Reflect)]
 #[reflect(Component, Default, Debug, Clone)]
-#[require(Frustum, VisibleMeshEntities, Transform, Visibility, VisibilityClass)]
+#[require(Frustum, VisibleMeshEntities, Visibility, VisibilityClass)]
 #[component(on_add = visibility::add_visibility_class::<ClusterVisibilityClass>)]
 pub struct SpotLight {
     /// The color of the light.

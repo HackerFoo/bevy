@@ -9,7 +9,7 @@ use super::*;
 /// the transform, and can be specified with [`Transform::looking_at`](Transform::looking_at).
 #[derive(Component, Debug, Clone, Copy, Reflect)]
 #[reflect(Component, Default, Debug)]
-#[require(Frustum, VisibleMeshEntities, Transform, Visibility)]
+#[require(Frustum, VisibleMeshEntities, Visibility)]
 pub struct SpotLight {
     /// The color of the light.
     ///

@@ -484,6 +484,26 @@ impl AppLifecycle {
     }
 }
 
+#[derive(Message, Debug, Clone, Copy, PartialEq, Eq, Reflect)]
+#[reflect(Debug, PartialEq)]
+#[cfg_attr(
+    feature = "serialize",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct MemoryWarning;
+
+#[derive(Message, Debug, Clone, PartialEq, Eq, Reflect)]
+#[reflect(Debug, PartialEq)]
+#[cfg_attr(
+    feature = "serialize",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct OpenFile {
+    pub path_buf: PathBuf
+}
+
 /// Wraps all `bevy_window` and `bevy_input` events in a common enum.
 ///
 /// Read these events with `MessageReader<WindowEvent>` if you need to
@@ -562,6 +582,8 @@ pub enum WindowEvent {
     ///
     /// Used to clear pressed key state.
     KeyboardFocusLost(KeyboardFocusLost),
+    MemoryWarning(MemoryWarning),
+    OpenFile(OpenFile),
 }
 
 impl From<AppLifecycle> for WindowEvent {
@@ -723,5 +745,15 @@ impl From<KeyboardInput> for WindowEvent {
 impl From<KeyboardFocusLost> for WindowEvent {
     fn from(e: KeyboardFocusLost) -> Self {
         Self::KeyboardFocusLost(e)
+    }
+}
+impl From<MemoryWarning> for WindowEvent {
+    fn from(e: MemoryWarning) -> Self {
+        Self::MemoryWarning(e)
+    }
+}
+impl From<OpenFile> for WindowEvent {
+    fn from(e: OpenFile) -> Self {
+        Self::OpenFile(e)
     }
 }

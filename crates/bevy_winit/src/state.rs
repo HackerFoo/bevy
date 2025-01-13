@@ -843,6 +843,12 @@ impl<M: Message> WinitAppRunnerState<M> {
                 BevyWindowEvent::KeyboardFocusLost(e) => {
                     world.write_message(e);
                 }
+                BevyWindowEvent::MemoryWarning(e) => {
+                    world.send_event(e);
+                }
+                BevyWindowEvent::OpenFile(e) => {
+                    world.send_event(e);
+                }
             }
         }
 

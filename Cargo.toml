@@ -3885,3 +3885,6 @@ doc-scrape-examples = true
 
 [package.metadata.example.testbed_3d]
 hidden = true
+
+[patch.crates-io]
+winit = { path = "../winit" }

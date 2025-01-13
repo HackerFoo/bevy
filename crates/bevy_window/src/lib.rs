@@ -118,7 +118,9 @@ impl Plugin for WindowPlugin {
             .add_event::<FileDragAndDrop>()
             .add_event::<WindowMoved>()
             .add_event::<WindowThemeChanged>()
-            .add_event::<AppLifecycle>();
+            .add_event::<AppLifecycle>()
+            .add_event::<MemoryWarning>()
+            .add_event::<OpenFile>();
 
         if let Some(primary_window) = &self.primary_window {
             app.world_mut().spawn(primary_window.clone()).insert((

@@ -4719,3 +4719,6 @@ name = "Render Depth to Texture"
 description = "Demonstrates how to use depth-only cameras"
 category = "Shaders"
 wasm = true
+
+[patch.crates-io]
+winit = { path = "../winit" }

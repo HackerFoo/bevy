@@ -4317,3 +4317,6 @@ name = "Extended Bindless Material"
 description = "Demonstrates bindless `ExtendedMaterial`"
 category = "Shaders"
 wasm = false
+
+[patch.crates-io]
+winit = { path = "../winit" }

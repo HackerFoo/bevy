@@ -4305,3 +4305,6 @@ name = "`no_std` Compatible Library"
 description = "Example library compatible with `std` and `no_std` targets"
 category = "Embedded"
 wasm = true
+
+[patch.crates-io]
+winit = { path = "../winit" }

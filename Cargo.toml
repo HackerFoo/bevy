@@ -1,6 +1,6 @@
 [package]
 name = "bevy"
-version = "0.15.0"
+version = "0.15.1"
 edition = "2021"
 categories = ["game-engines", "graphics", "gui", "rendering"]
 description = "A refreshingly simple data-driven game engine and app framework"
@@ -229,7 +229,10 @@ bevy_ui = [
 bevy_window = ["bevy_internal/bevy_window"]
 
 # winit window and input backend
-bevy_winit = ["bevy_internal/bevy_winit"]
+bevy_winit = ["bevy_internal/bevy_winit", "bevy_window"]
+
+# Load and access image data. Usually added by an image format
+bevy_image = ["bevy_internal/bevy_image"]
 
 # Adds support for rendering gizmos
 bevy_gizmos = ["bevy_internal/bevy_gizmos", "bevy_color"]
@@ -460,11 +463,11 @@ custom_cursor = ["bevy_internal/custom_cursor"]
 ghost_nodes = ["bevy_internal/ghost_nodes"]
 
 [dependencies]
-bevy_internal = { path = "crates/bevy_internal", version = "0.15.0", default-features = false }
+bevy_internal = { path = "crates/bevy_internal", version = "0.15.1", default-features = false }
 
 # Wasm does not support dynamic linking.
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-bevy_dylib = { path = "crates/bevy_dylib", version = "0.15.0", default-features = false, optional = true }
+bevy_dylib = { path = "crates/bevy_dylib", version = "0.15.1", default-features = false, optional = true }
 
 [dev-dependencies]
 rand = "0.8.0"
@@ -474,7 +477,7 @@ flate2 = "1.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 bytemuck = "1.7"
-bevy_render = { path = "crates/bevy_render", version = "0.15.0", default-features = false }
+bevy_render = { path = "crates/bevy_render", version = "0.15.1", default-features = false }
 # Needed to poll Task examples
 futures-lite = "2.0.1"
 async-std = "1.13"
@@ -991,7 +994,7 @@ doc-scrape-examples = true
 name = "Motion Blur"
 description = "Demonstrates per-pixel motion blur"
 category = "3D Rendering"
-wasm = false
+wasm = true
 
 [[example]]
 name = "order_independent_transparency"

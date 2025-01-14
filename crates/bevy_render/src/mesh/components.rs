@@ -82,7 +82,7 @@ impl From<&Mesh2d> for AssetId<Mesh> {
 /// ```
 #[derive(Component, Clone, Debug, Default, Deref, DerefMut, Reflect, PartialEq, Eq, From)]
 #[reflect(Component, Default)]
-#[require(Visibility)]
+#[require(Transform, Visibility)]
 pub struct Mesh3d(pub Handle<Mesh>);
 
 impl From<Mesh3d> for AssetId<Mesh> {

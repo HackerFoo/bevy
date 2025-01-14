@@ -37,7 +37,7 @@ use bevy_window::{
     AppLifecycle, CursorEntered, CursorLeft, CursorMoved, FileDragAndDrop, Ime, RequestRedraw,
     Window, WindowBackendScaleFactorChanged, WindowCloseRequested, WindowDestroyed,
     WindowEvent as BevyWindowEvent, WindowFocused, WindowMoved, WindowOccluded, WindowResized,
-    WindowScaleFactorChanged, WindowThemeChanged, MemoryWarning, OpenFile,
+    WindowScaleFactorChanged, WindowThemeChanged,
 };
 #[cfg(target_os = "android")]
 use bevy_window::{PrimaryWindow, RawHandleWrapper};
@@ -652,14 +652,6 @@ impl<T: Event> ApplicationHandler<T> for WinitAppRunnerState<T> {
         let world = self.world_mut();
         world.clear_all();
     }
-
-    fn memory_warning(&mut self, _event_loop: &ActiveEventLoop) {
-        self.bevy_window_events.send(MemoryWarning);
-    }
-
-    fn open_file(&mut self, _event_loop: &ActiveEventLoop, path_buf: std::path::PathBuf) {
-        self.bevy_window_events.send(OpenFile { path_buf });
-    }
 }
 
 impl<T: Event> WinitAppRunnerState<T> {
@@ -787,12 +779,6 @@ impl<T: Event> WinitAppRunnerState<T> {
                     world.send_event(e);
                 }
                 BevyWindowEvent::KeyboardFocusLost(e) => {
-                    world.send_event(e);
-                }
-                BevyWindowEvent::MemoryWarning(e) => {
-                    world.send_event(e);
-                }
-                BevyWindowEvent::OpenFile(e) => {
                     world.send_event(e);
                 }
             }

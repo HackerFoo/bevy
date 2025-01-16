@@ -330,6 +330,7 @@ pub struct Camera {
     pub clear_color: ClearColorConfig,
     /// If set, this camera will be a sub camera of a large view, defined by a [`SubCameraView`].
     pub sub_camera_view: Option<SubCameraView>,
+    pub render_shadows: bool,
 }
 
 fn warn_on_no_render_graph(world: DeferredWorld, HookContext { entity, caller, .. }: HookContext) {
@@ -351,6 +352,7 @@ impl Default for Camera {
             msaa_writeback: true,
             clear_color: Default::default(),
             sub_camera_view: None,
+            render_shadows: true,
         }
     }
 }
@@ -1040,6 +1042,7 @@ pub struct ExtractedCamera {
     pub sorted_camera_index_for_target: usize,
     pub exposure: f32,
     pub hdr: bool,
+    pub render_shadows: bool,
 }
 
 pub fn extract_cameras(
@@ -1153,6 +1156,7 @@ pub fn extract_cameras(
                         .map(Exposure::exposure)
                         .unwrap_or_else(|| Exposure::default().exposure()),
                     hdr: camera.hdr,
+                    render_shadows: camera.render_shadows,
                 },
                 ExtractedView {
                     retained_view_entity: RetainedViewEntity::new(main_entity.into(), None, 0),

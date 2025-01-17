@@ -140,6 +140,8 @@ pub struct CascadeShadowConfig {
     pub overlap_proportion: f32,
     /// The (positive) distance to the near boundary of the first cascade.
     pub minimum_distance: f32,
+    /// Whether the cascades are user controlled
+    pub manual_cascades: bool,
 }
 
 impl Default for CascadeShadowConfig {
@@ -200,6 +202,7 @@ pub struct CascadeShadowConfigBuilder {
     /// The overlap is used to make the transition from one cascade's shadow map to the next
     /// less abrupt by blending between both shadow maps.
     pub overlap_proportion: f32,
+    pub manual_cascades: bool,
 }
 
 impl CascadeShadowConfigBuilder {
@@ -238,6 +241,7 @@ impl CascadeShadowConfigBuilder {
             ),
             overlap_proportion: self.overlap_proportion,
             minimum_distance: self.minimum_distance,
+            manual_cascades: false,
         }
     }
 }
@@ -256,6 +260,7 @@ impl Default for CascadeShadowConfigBuilder {
                 maximum_distance: 100.0,
                 first_cascade_far_bound: 5.0,
                 overlap_proportion: 0.2,
+                manual_cascades: false,
             }
         } else {
             Self {
@@ -264,6 +269,7 @@ impl Default for CascadeShadowConfigBuilder {
                 maximum_distance: 1000.0,
                 first_cascade_far_bound: 5.0,
                 overlap_proportion: 0.2,
+                manual_cascades: false,
             }
         }
     }
@@ -279,26 +285,26 @@ impl From<CascadeShadowConfigBuilder> for CascadeShadowConfig {
 #[reflect(Component, Debug, Default)]
 pub struct Cascades {
     /// Map from a view to the configuration of each of its [`Cascade`]s.
-    pub(crate) cascades: EntityHashMap<Vec<Cascade>>,
+    pub cascades: EntityHashMap<Vec<Cascade>>,
 }
 
 #[derive(Clone, Debug, Default, Reflect)]
 pub struct Cascade {
     /// The transform of the light, i.e. the view to world matrix.
-    pub(crate) world_from_cascade: Mat4,
+    pub world_from_cascade: Mat4,
     /// The orthographic projection for this cascade.
-    pub(crate) clip_from_cascade: Mat4,
+    pub clip_from_cascade: Mat4,
     /// The view-projection matrix for this cascade, converting world space into light clip space.
     /// Importantly, this is derived and stored separately from `view_transform` and `projection` to
     /// ensure shadow stability.
-    pub(crate) clip_from_world: Mat4,
+    pub clip_from_world: Mat4,
     /// Size of each shadow map texel in world units.
-    pub(crate) texel_size: f32,
+    pub texel_size: f32,
 }
 
-pub fn clear_directional_light_cascades(mut lights: Query<(&DirectionalLight, &mut Cascades)>) {
-    for (directional_light, mut cascades) in lights.iter_mut() {
-        if !directional_light.shadows_enabled {
+pub fn clear_directional_light_cascades(mut lights: Query<(&DirectionalLight, &CascadeShadowConfig, &mut Cascades)>) {
+    for (directional_light, cascades_config, mut cascades) in lights.iter_mut() {
+        if !directional_light.shadows_enabled || cascades_config.manual_cascades {
             continue;
         }
         cascades.cascades.clear();
@@ -327,7 +333,7 @@ pub fn build_directional_light_cascades<P: CameraProjection + Component>(
         .collect::<Vec<_>>();
 
     for (transform, directional_light, cascades_config, mut cascades) in &mut lights {
-        if !directional_light.shadows_enabled {
+        if !directional_light.shadows_enabled || cascades_config.manual_cascades {
             continue;
         }
 

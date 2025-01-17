@@ -1356,12 +1356,16 @@ pub fn prepare_lights(
                 continue;
             }
 
-            let cascades = light
+            let Some(cascades) = light
                 .cascades
                 .get(&entity)
-                .unwrap()
-                .iter()
-                .take(MAX_CASCADES_PER_LIGHT);
+                .map(|cascades| {
+                    cascades
+                        .iter()
+                        .take(MAX_CASCADES_PER_LIGHT)
+                }) else {
+                    continue
+                };
             let frusta = light
                 .frusta
                 .get(&entity)

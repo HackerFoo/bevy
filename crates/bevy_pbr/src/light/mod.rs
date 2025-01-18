@@ -407,6 +407,16 @@ fn calculate_cascade(
         .max((frustum_corners[4] - frustum_corners[6]).length())
         .ceil();
 
+    calculate_cascade_from_bounds(min, max, cascade_diameter, cascade_texture_size, world_from_light)
+}
+
+pub fn calculate_cascade_from_bounds(
+    min: Vec3A,
+    max: Vec3A,
+    cascade_diameter: f32,
+    cascade_texture_size: f32,
+    world_from_light: Mat4,
+) -> Cascade {
     // NOTE: If we ensure that cascade_texture_size is a power of 2, then as we made cascade_diameter an
     //       integer, cascade_texel_size is then an integer multiple of a power of 2 and can be
     //       exactly represented in a floating point value.

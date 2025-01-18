@@ -29,7 +29,7 @@ use bevy_ecs::{
     world::DeferredWorld,
 };
 use bevy_image::Image;
-use bevy_math::{ops, vec2, Dir3, Mat4, Ray3d, Rect, URect, UVec2, UVec4, Vec2, Vec3};
+use bevy_math::{bounding::Aabb3d, ops, vec2, Dir3, Mat4, Ray3d, Rect, URect, UVec2, UVec4, Vec2, Vec3};
 use bevy_reflect::prelude::*;
 use bevy_render_macros::ExtractComponent;
 use bevy_transform::components::{GlobalTransform, Transform};
@@ -325,7 +325,22 @@ pub struct Camera {
     pub clear_color: ClearColorConfig,
     /// If set, this camera will be a sub camera of a large view, defined by a [`SubCameraView`].
     pub sub_camera_view: Option<SubCameraView>,
-    pub render_shadows: bool,
+    pub shadow_volume: ShadowVolume,
+}
+
+#[derive(Debug, Reflect, Clone, Copy)]
+pub enum ShadowVolume {
+    None,
+    Viewable,
+    Box {
+        aabb: Aabb3d
+    }
+}
+
+impl ShadowVolume {
+    pub fn enabled(&self) -> bool {
+        !matches!(self, Self::None)
+    }
 }
 
 fn warn_on_no_render_graph(world: DeferredWorld, entity: Entity, _: ComponentId) {
@@ -347,7 +362,7 @@ impl Default for Camera {
             msaa_writeback: true,
             clear_color: Default::default(),
             sub_camera_view: None,
-            render_shadows: true,
+            shadow_volume: ShadowVolume::Viewable,
         }
     }
 }
@@ -1130,7 +1145,7 @@ pub fn extract_cameras(
                         .map(Exposure::exposure)
                         .unwrap_or_else(|| Exposure::default().exposure()),
                     hdr: camera.hdr,
-                    render_shadows: camera.render_shadows,
+                    render_shadows: camera.shadow_volume.enabled(),
                 },
                 ExtractedView {
                     clip_from_view: camera.clip_from_view(),

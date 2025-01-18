@@ -7,7 +7,7 @@ use bevy_ecs::{
 use bevy_math::{ops, Mat4, Vec3A, Vec4};
 use bevy_reflect::prelude::*;
 use bevy_render::{
-    camera::{Camera, CameraProjection},
+    camera::{Camera, CameraProjection, ShadowVolume},
     extract_component::ExtractComponent,
     extract_resource::ExtractResource,
     mesh::Mesh3d,
@@ -319,7 +319,7 @@ pub fn build_directional_light_cascades<P: CameraProjection + Component>(
         .iter()
         .filter_map(|(entity, transform, projection, camera)| {
             if camera.is_active {
-                Some((entity, projection, transform.compute_matrix()))
+                Some((entity, projection, transform.compute_matrix(), camera.shadow_volume))
             } else {
                 None
             }
@@ -338,34 +338,51 @@ pub fn build_directional_light_cascades<P: CameraProjection + Component>(
         // `transform.compute_matrix()` will give us a matrix with our desired properties.
         // Instead, we directly create a good matrix from just the rotation.
         let world_from_light = Mat4::from_quat(transform.compute_transform().rotation);
-        let light_to_world_inverse = world_from_light.inverse();
+        let light_from_world = world_from_light.inverse();
 
-        for (view_entity, projection, view_to_world) in views.iter().copied() {
-            let camera_to_light_view = light_to_world_inverse * view_to_world;
-            let view_cascades = cascades_config
-                .bounds
-                .iter()
-                .enumerate()
-                .map(|(idx, far_bound)| {
-                    // Negate bounds as -z is camera forward direction.
-                    let z_near = if idx > 0 {
-                        (1.0 - cascades_config.overlap_proportion)
-                            * -cascades_config.bounds[idx - 1]
-                    } else {
-                        -cascades_config.minimum_distance
-                    };
-                    let z_far = -far_bound;
+        for (view_entity, projection, world_from_view, shadow_volume) in views.iter().copied() {
+            let view_cascades = match shadow_volume {
+                ShadowVolume::None => {
+                    vec![]
+                }
+                ShadowVolume::Viewable => {
+                    let light_from_view = light_from_world * world_from_view;
+                    cascades_config
+                        .bounds
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, far_bound)| {
+                            // Negate bounds as -z is camera forward direction.
+                            let z_near = if idx > 0 {
+                                (1.0 - cascades_config.overlap_proportion)
+                                    * -cascades_config.bounds[idx - 1]
+                            } else {
+                                -cascades_config.minimum_distance
+                            };
+                            let z_far = -far_bound;
 
-                    let corners = projection.get_frustum_corners(z_near, z_far);
+                            let corners = projection.get_frustum_corners(z_near, z_far);
 
-                    calculate_cascade(
-                        corners,
-                        directional_light_shadow_map.size as f32,
-                        world_from_light,
-                        camera_to_light_view,
-                    )
-                })
-                .collect();
+                            calculate_cascade(
+                                corners,
+                                directional_light_shadow_map.size as f32,
+                                world_from_light,
+                                light_from_view,
+                            )
+                        })
+                        .collect()
+                }
+                ShadowVolume::Box { aabb } => {
+                    vec![
+                        calculate_cascade(
+                            aabb.iter_corners(),
+                            directional_light_shadow_map.size as f32,
+                            world_from_light,
+                            light_from_world,
+                        )
+                    ]
+                }
+            };
             cascades.cascades.insert(view_entity, view_cascades);
         }
     }
@@ -375,18 +392,22 @@ pub fn build_directional_light_cascades<P: CameraProjection + Component>(
 ///
 /// The corner vertices should be specified in the following order:
 /// first the bottom right, top right, top left, bottom left for the near plane, then similar for the far plane.
-fn calculate_cascade(
-    frustum_corners: [Vec3A; 8],
+fn calculate_cascade<I: IntoIterator<Item = Vec3A>>(
+    points: I,
     cascade_texture_size: f32,
     world_from_light: Mat4,
-    light_from_camera: Mat4,
+    light_from_point_space: Mat4,
 ) -> Cascade {
+    let mut point_min = Vec3A::splat(f32::MAX);
+    let mut point_max = Vec3A::splat(f32::MIN);
     let mut min = Vec3A::splat(f32::MAX);
     let mut max = Vec3A::splat(f32::MIN);
-    for corner_camera_view in frustum_corners {
-        let corner_light_view = light_from_camera.transform_point3a(corner_camera_view);
-        min = min.min(corner_light_view);
-        max = max.max(corner_light_view);
+    for point in points {
+        point_min = point_min.min(point);
+        point_max = point_max.max(point);
+        let light_point = light_from_point_space.transform_point3a(point);
+        min = min.min(light_point);
+        max = max.max(light_point);
     }
 
     // NOTE: Use the larger of the frustum slice far plane diagonal and body diagonal lengths as this
@@ -396,11 +417,7 @@ fn calculate_cascade(
     //       as even though the lengths using corner_light_view above should be the same, precision can
     //       introduce small but significant differences.
     // NOTE: The size remains the same unless the view frustum or cascade configuration is modified.
-    let cascade_diameter = (frustum_corners[0] - frustum_corners[6])
-        .length()
-        .max((frustum_corners[4] - frustum_corners[6]).length())
-        .ceil();
-
+    let cascade_diameter = (point_max - point_min).length();
     // NOTE: If we ensure that cascade_texture_size is a power of 2, then as we made cascade_diameter an
     //       integer, cascade_texel_size is then an integer multiple of a power of 2 and can be
     //       exactly represented in a floating point value.

@@ -1,5 +1,5 @@
 use crate::{
-    core_3d::Opaque3d,
+    core_3d::{Opaque3d, Transparent3d, ViewSortedRenderPhases},
     skybox::{SkyboxBindGroup, SkyboxPipelineId},
 };
 use bevy_ecs::{prelude::World, query::QueryItem};
@@ -48,16 +48,18 @@ impl ViewNode for MainOpaquePass3dNode {
         ): QueryItem<'w, Self::ViewQuery>,
         world: &'w World,
     ) -> Result<(), NodeRunError> {
-        let (Some(opaque_phases), Some(alpha_mask_phases)) = (
+        let (Some(opaque_phases), Some(alpha_mask_phases), Some(transparent_phases)) = (
             world.get_resource::<ViewBinnedRenderPhases<Opaque3d>>(),
             world.get_resource::<ViewBinnedRenderPhases<AlphaMask3d>>(),
+            world.get_resource::<ViewSortedRenderPhases<Transparent3d>>(),
         ) else {
             return Ok(());
         };
 
-        let (Some(opaque_phase), Some(alpha_mask_phase)) = (
+        let (Some(opaque_phase), Some(alpha_mask_phase), Some(transparent_phase)) = (
             opaque_phases.get(&extracted_view.retained_view_entity),
             alpha_mask_phases.get(&extracted_view.retained_view_entity),
+            transparent_phases.get(&extracted_view.retained_view_entity),
         ) else {
             return Ok(());
         };
@@ -65,7 +67,7 @@ impl ViewNode for MainOpaquePass3dNode {
         let diagnostics = render_context.diagnostic_recorder();
 
         let color_attachments = [Some(target.get_color_attachment())];
-        let depth_stencil_attachment = Some(depth.get_attachment(StoreOp::Store));
+        let depth_stencil_attachment = Some(depth.get_attachment(StoreOp::Discard));
 
         let view_entity = graph.view_entity();
         render_context.add_command_buffer_generation_task(move |render_device| {
@@ -107,6 +109,15 @@ impl ViewNode for MainOpaquePass3dNode {
                 #[cfg(feature = "trace")]
                 let _alpha_mask_main_pass_3d_span = info_span!("alpha_mask_main_pass_3d").entered();
                 if let Err(err) = alpha_mask_phase.render(&mut render_pass, world, view_entity) {
+                    error!("Error encountered while rendering the alpha mask phase {err:?}");
+                }
+            }
+
+            // Alpha draws
+            if !transparent_phase.items.is_empty() {
+                #[cfg(feature = "trace")]
+                let _transparent_main_pass_3d_span = info_span!("transparent_main_pass_3d").entered();
+                if let Err(err) = transparent_phase.render(&mut render_pass, world, view_entity) {
                     error!("Error encountered while rendering the alpha mask phase {err:?}");
                 }
             }

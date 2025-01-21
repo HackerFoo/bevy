@@ -184,7 +184,7 @@ impl Plugin for AtmospherePlugin {
                 (
                     Node3d::MainOpaquePass,
                     AtmosphereNode::RenderSky,
-                    Node3d::MainTransparentPass,
+                    Node3d::MainTransmissivePass,
                 ),
             );
     }

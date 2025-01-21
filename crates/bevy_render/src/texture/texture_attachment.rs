@@ -50,7 +50,7 @@ impl ColorAttachment {
                         (Some(clear_color), true) => LoadOp::Clear(clear_color.into()),
                         (None, _) | (Some(_), false) => LoadOp::Load,
                     },
-                    store: StoreOp::Store,
+                    store: StoreOp::Discard, // HACK
                 },
             }
         } else {

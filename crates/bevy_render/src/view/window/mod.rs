@@ -67,7 +67,7 @@ pub struct ExtractedWindow {
     pub swap_chain_texture_view: Option<TextureView>,
     pub swap_chain_texture: Option<SurfaceTexture>,
     pub swap_chain_texture_format: Option<TextureFormat>,
-    pub size_changed: bool,
+    pub size_change_pending: bool,
     pub present_mode_changed: bool,
     pub alpha_mode: CompositeAlphaMode,
 }
@@ -122,29 +122,38 @@ fn extract_windows(
             window.resolution.physical_height().max(1),
         );
 
-        let extracted_window = extracted_windows.entry(entity).or_insert(ExtractedWindow {
-            entity,
-            handle: handle.clone(),
-            physical_width: new_width,
-            physical_height: new_height,
-            present_mode: window.present_mode,
-            desired_maximum_frame_latency: window.desired_maximum_frame_latency,
-            swap_chain_texture: None,
-            swap_chain_texture_view: None,
-            size_changed: false,
-            swap_chain_texture_format: None,
-            present_mode_changed: false,
-            alpha_mode: window.composite_alpha_mode,
-        });
+        let extracted_window = extracted_windows
+            .entry(entity)
+            .and_modify(|extracted_window| {
+                // NOTE: Drop the swap chain frame here
+                extracted_window.swap_chain_texture = None;
+                if new_width != extracted_window.physical_width
+                    || new_height != extracted_window.physical_height
+                {
+                    extracted_window.physical_width = new_width;
+                    extracted_window.physical_height = new_height;
+                    extracted_window.size_change_pending = true;
+                }
+            })
+            .or_insert(ExtractedWindow {
+                entity,
+                handle: handle.clone(),
+                physical_width: new_width,
+                physical_height: new_height,
+                present_mode: window.present_mode,
+                desired_maximum_frame_latency: window.desired_maximum_frame_latency,
+                swap_chain_texture: None,
+                swap_chain_texture_view: None,
+                size_change_pending: true,
+                swap_chain_texture_format: None,
+                present_mode_changed: false,
+                alpha_mode: window.composite_alpha_mode,
+            });
 
         // NOTE: Drop the swap chain frame here
         extracted_window.swap_chain_texture_view = None;
-        extracted_window.size_changed = new_width != extracted_window.physical_width
-            || new_height != extracted_window.physical_height;
-        extracted_window.present_mode_changed =
-            window.present_mode != extracted_window.present_mode;
-
-        if extracted_window.size_changed {
+        extracted_window.present_mode_changed = window.present_mode != extracted_window.present_mode;
+        if extracted_window.size_change_pending {
             debug!(
                 "Window size changed from {}x{} to {}x{}",
                 extracted_window.physical_width,
@@ -152,8 +161,6 @@ fn extract_windows(
                 new_width,
                 new_height
             );
-            extracted_window.physical_width = new_width;
-            extracted_window.physical_height = new_height;
         }
 
         if extracted_window.present_mode_changed {
@@ -288,7 +295,7 @@ pub fn need_surface_configuration(
 ) -> bool {
     for window in windows.windows.values() {
         if !window_surfaces.configured_windows.contains(&window.entity)
-            || window.size_changed
+            || window.size_change_pending
             || window.present_mode_changed
         {
             return true;
@@ -310,13 +317,13 @@ pub fn create_surfaces(
     #[cfg(any(target_os = "macos", target_os = "ios"))] _marker: Option<
         NonSend<bevy_core::NonSendMarker>,
     >,
-    windows: Res<ExtractedWindows>,
+    mut windows: ResMut<ExtractedWindows>,
     mut window_surfaces: ResMut<WindowSurfaces>,
     render_instance: Res<RenderInstance>,
     render_adapter: Res<RenderAdapter>,
     render_device: Res<RenderDevice>,
 ) {
-    for window in windows.windows.values() {
+    for window in windows.windows.values_mut() {
         let data = window_surfaces
             .surfaces
             .entry(window.entity)
@@ -401,7 +408,7 @@ pub fn create_surfaces(
                 }
             });
 
-        if window.size_changed || window.present_mode_changed {
+        if window.size_change_pending || window.present_mode_changed {
             data.configuration.width = window.physical_width;
             data.configuration.height = window.physical_height;
             data.configuration.present_mode = match window.present_mode {
@@ -413,6 +420,7 @@ pub fn create_surfaces(
                 PresentMode::AutoNoVsync => wgpu::PresentMode::AutoNoVsync,
             };
             render_device.configure_surface(&data.surface, &data.configuration);
+            window.size_change_pending = false;
         }
 
         window_surfaces.configured_windows.insert(window.entity);

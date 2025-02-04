@@ -243,7 +243,9 @@ impl Node for GpuPreprocessNode {
             compute_pass.set_bind_group(0, &bind_group.0, &dynamic_offsets);
 
             let workgroup_count = index_buffer.buffer.len().div_ceil(WORKGROUP_SIZE);
-            compute_pass.dispatch_workgroups(workgroup_count as u32, 1, 1);
+            if workgroup_count > 0 {
+                compute_pass.dispatch_workgroups(workgroup_count as u32, 1, 1);
+            }
         }
 
         Ok(())

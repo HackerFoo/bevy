@@ -413,6 +413,8 @@ impl AppLifecycle {
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
+
+/// Warning that app may be terminated to reclaim memory.
 pub struct MemoryWarning;
 
 #[derive(Event, Debug, Clone, PartialEq, Eq, Reflect)]
@@ -422,7 +424,10 @@ pub struct MemoryWarning;
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
+
+/// File sent to app from OS.
 pub struct OpenFile {
+    /// Path of the file, should be read immediately.
     pub path_buf: PathBuf
 }
 

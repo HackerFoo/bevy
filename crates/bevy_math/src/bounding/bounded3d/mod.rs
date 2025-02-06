@@ -100,6 +100,18 @@ impl Aabb3d {
         // Clamp point coordinates to the AABB
         point.into().clamp(self.min, self.max)
     }
+
+    /// Returns an iterator over the corners.
+    pub fn iter_corners(&self) -> impl Iterator<Item = Vec3A> + '_ {
+        (0..8u8).into_iter()
+            .map(|n| {
+                Vec3A::new(
+                    if n & 1 == 0 { self.min.x } else { self.max.x },
+                    if n & 2 == 0 { self.min.y } else { self.max.y },
+                    if n & 4 == 0 { self.min.z } else { self.max.z },
+                )
+            })
+    }
 }
 
 impl BoundingVolume for Aabb3d {

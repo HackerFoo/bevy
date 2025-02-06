@@ -180,7 +180,11 @@ pub struct PerspectiveProjection {
 
 impl CameraProjection for PerspectiveProjection {
     fn get_clip_from_view(&self) -> Mat4 {
-        Mat4::perspective_infinite_reverse_rh(self.fov, self.aspect_ratio, self.near)
+        Mat4::perspective_infinite_reverse_rh(
+            self.fov / self.aspect_ratio.sqrt(),
+            self.aspect_ratio,
+            self.near,
+        )
     }
 
     fn get_clip_from_view_for_sub(&self, sub_view: &super::SubCameraView) -> Mat4 {

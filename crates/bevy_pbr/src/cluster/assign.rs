@@ -96,7 +96,7 @@ pub(crate) fn assign_objects_to_clusters(
     clusterable_objects.extend(
         point_lights_query
             .iter()
-            .filter(|(.., visibility)| visibility.get())
+            .filter(|(.., light, _, _, visibility)| visibility.get() && light.intensity > 0.0)
             .map(
                 |(entity, transform, point_light, maybe_layers, volumetric, _visibility)| {
                     ClusterableObjectAssignmentData {
@@ -114,7 +114,7 @@ pub(crate) fn assign_objects_to_clusters(
     clusterable_objects.extend(
         spot_lights_query
             .iter()
-            .filter(|(.., visibility)| visibility.get())
+            .filter(|(.., light, _, _, visibility)| visibility.get() && light.intensity > 0.0)
             .map(
                 |(entity, transform, spot_light, maybe_layers, volumetric, _visibility)| {
                     ClusterableObjectAssignmentData {

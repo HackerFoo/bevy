@@ -32,8 +32,7 @@ use crate::{
 };
 
 use bevy_app::{Animation, App, Plugin, PostUpdate};
-use bevy_asset::{Asset, AssetApp, Assets};
-use bevy_core::Name;
+use bevy_asset::{Asset, AssetApp, AssetEvents, Assets};
 use bevy_ecs::{
     entity::{VisitEntities, VisitEntitiesMut},
     prelude::*,
@@ -41,17 +40,15 @@ use bevy_ecs::{
     world::EntityMutExcept,
 };
 use bevy_math::FloatOrd;
+use bevy_platform_support::{collections::HashMap, hash::NoOpHash};
 use bevy_reflect::{prelude::ReflectDefault, Reflect, TypePath};
 use bevy_time::Time;
 use bevy_transform::TransformSystem;
-use bevy_utils::{
-    hashbrown::HashMap,
-    tracing::{trace, warn},
-    NoOpHash, PreHashMap, PreHashMapExt, TypeIdMap,
-};
+use bevy_utils::{PreHashMap, PreHashMapExt, TypeIdMap};
 use petgraph::graph::NodeIndex;
 use serde::{Deserialize, Serialize};
 use thread_local::ThreadLocal;
+use tracing::{trace, warn};
 use uuid::Uuid;
 
 /// The animation prelude.
@@ -468,7 +465,7 @@ pub enum AnimationEvaluationError {
 /// An animation that an [`AnimationPlayer`] is currently either playing or was
 /// playing, but is presently paused.
 ///
-/// An stopped animation is considered no longer active.
+/// A stopped animation is considered no longer active.
 #[derive(Debug, Clone, Copy, Reflect)]
 pub struct ActiveAnimation {
     /// The factor by which the weight from the [`AnimationGraph`] is multiplied.
@@ -658,7 +655,7 @@ impl ActiveAnimation {
     ///
     /// Note that any events between the current time and `seek_time`
     /// will be triggered on the next update.
-    /// Use [`set_seek_time`](Self::set_seek_time) if this is undisered.
+    /// Use [`set_seek_time`](Self::set_seek_time) if this is undesired.
     pub fn seek_to(&mut self, seek_time: f32) -> &mut Self {
         self.last_seek_time = Some(self.seek_time);
         self.seek_time = seek_time;
@@ -669,7 +666,7 @@ impl ActiveAnimation {
     ///
     /// Note that any events between the current time and `0.0`
     /// will be triggered on the next update.
-    /// Use [`set_seek_time`](Self::set_seek_time) if this is undisered.
+    /// Use [`set_seek_time`](Self::set_seek_time) if this is undesired.
     pub fn rewind(&mut self) -> &mut Self {
         self.last_seek_time = Some(self.seek_time);
         self.seek_time = 0.0;
@@ -758,10 +755,10 @@ impl AnimationCurveEvaluators {
                 .component_property_curve_evaluators
                 .get_or_insert_with(component_property, func),
             EvaluatorId::Type(type_id) => match self.type_id_curve_evaluators.entry(type_id) {
-                bevy_utils::hashbrown::hash_map::Entry::Occupied(occupied_entry) => {
+                bevy_platform_support::collections::hash_map::Entry::Occupied(occupied_entry) => {
                     &mut **occupied_entry.into_mut()
                 }
-                bevy_utils::hashbrown::hash_map::Entry::Vacant(vacant_entry) => {
+                bevy_platform_support::collections::hash_map::Entry::Vacant(vacant_entry) => {
                     &mut **vacant_entry.insert(func())
                 }
             },
@@ -940,13 +937,6 @@ impl AnimationPlayer {
     pub fn animation_mut(&mut self, animation: AnimationNodeIndex) -> Option<&mut ActiveAnimation> {
         self.active_animations.get_mut(&animation)
     }
-
-    #[deprecated = "Use `is_playing_animation` instead"]
-    /// Returns true if the animation is currently playing or paused, or false
-    /// if the animation is stopped.
-    pub fn animation_is_playing(&self, animation: AnimationNodeIndex) -> bool {
-        self.active_animations.contains_key(&animation)
-    }
 }
 
 /// A system that triggers untargeted animation events for the currently-playing animations.
@@ -1059,8 +1049,8 @@ pub fn animate_targets(
                     (player, graph_handle.id())
                 } else {
                     trace!(
-                        "Either an animation player {:?} or a graph was missing for the target \
-                         entity {:?} ({:?}); no animations will play this frame",
+                        "Either an animation player {} or a graph was missing for the target \
+                         entity {} ({:?}); no animations will play this frame",
                         player_id,
                         entity_mut.id(),
                         entity_mut.get::<Name>(),
@@ -1254,7 +1244,7 @@ impl Plugin for AnimationPlugin {
             .add_systems(
                 PostUpdate,
                 (
-                    graph::thread_animation_graphs,
+                    graph::thread_animation_graphs.before(AssetEvents),
                     advance_transitions,
                     advance_animations,
                     // TODO: `animate_targets` can animate anything, so

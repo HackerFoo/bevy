@@ -1889,46 +1889,6 @@ impl ScheduleGraph {
             }
         }
 
-        use std::fs::File;
-        use std::io::Write;
-        use bevy_utils::hashbrown::HashSet;
-
-        if let Ok(mut file) = File::create("conflicts.dot") {
-            writeln!(file, "graph {{").unwrap();
-            let conflicting_nodes: HashSet<NodeId> = ambiguities.iter().flat_map(|(a, b, ..)| [*a, *b]).collect();
-            for node in conflicting_nodes {
-                let NodeId::System(id) = node else {
-                    continue
-                };
-                writeln!(file, "  system{id} [label={:?}]", self.get_node_name(&node)).unwrap();
-            }
-
-            for (a, b, conflicts) in ambiguities {
-                let NodeId::System(a) = a else {
-                    continue
-                };
-                let NodeId::System(b) = b else {
-                    continue
-                };
-                write!(file, "  system{a} -- system{b} [label=\"").unwrap();
-                if !conflicts.is_empty() {
-                    let mut sep = "";
-                    for component_id in conflicts {
-                        write!(file, "{sep}{}", components.get_name(*component_id).unwrap()).unwrap();
-                        sep = ", ";
-                    }
-                } else {
-                    // one or both systems must be exclusive
-                    let world = core::any::type_name::<World>();
-                    write!(file, "{world}").unwrap();
-                }
-                writeln!(file, "\"]").unwrap();
-            }
-            writeln!(file, "}}").unwrap();
-
-            writeln!(message, "wrote conflicts.dot").unwrap();
-        }
-
         message
     }
 

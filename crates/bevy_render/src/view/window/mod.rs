@@ -338,24 +338,15 @@ pub fn create_surfaces(
                 // For future HDR output support, we'll need to request a format that supports HDR,
                 // but as of wgpu 0.15 that is not yet supported.
                 // Prefer sRGB formats for surfaces, but fall back to first available format if no sRGB formats are available.
-                let mut sdr_format = None;
-                let mut hdr_format = None;
+                let mut format = *formats.first().expect("No supported formats for surface");
                 for available_format in formats {
                     // Rgba8UnormSrgb and Bgra8UnormSrgb and the only sRGB formats wgpu exposes that we can use for surfaces.
-                    if sdr_format.is_none() && (available_format == TextureFormat::Rgba8UnormSrgb
-                        || available_format == TextureFormat::Bgra8UnormSrgb)
+                    if available_format == TextureFormat::Rgba8UnormSrgb
+                        || available_format == TextureFormat::Bgra8UnormSrgb
                     {
-                        sdr_format = Some(available_format);
+                        format = available_format;
+                        break;
                     }
-                    if hdr_format.is_none() && available_format == TextureFormat::Rgba16Float
-                    {
-                        hdr_format = Some(available_format);
-                    }
-
-                }
-                let format = hdr_format.or(sdr_format).expect("No supported formats for surface");
-                if format == TextureFormat::Rgba16Float {
-                    bevy_utils::tracing::info!("HDR ENABLED");
                 }
 
                 let configuration = SurfaceConfiguration {

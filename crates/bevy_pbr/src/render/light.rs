@@ -12,7 +12,6 @@ use bevy_math::{ops, Mat4, UVec4, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
 use bevy_render::camera::SortedCameras;
 use bevy_render::sync_world::{MainEntity, RenderEntity, TemporaryRenderEntity};
 use bevy_render::{
-    camera::ExtractedCamera,
     diagnostic::RecordDiagnostics,
     mesh::RenderMesh,
     primitives::{CascadesFrusta, CubemapFrusta, Frustum, HalfSpace},
@@ -1720,7 +1719,7 @@ impl CachedRenderPipelinePhaseItem for Shadow {
 }
 
 pub struct ShadowPassNode {
-    main_view_query: QueryState<(Read<ViewLightEntities>, Read<ExtractedCamera>)>,
+    main_view_query: QueryState<Read<ViewLightEntities>>,
     view_light_query: QueryState<Read<ShadowView>>,
 }
 
@@ -1756,10 +1755,7 @@ impl Node for ShadowPassNode {
 
         let time_span = diagnostics.time_span(render_context.command_encoder(), "shadows");
 
-        if let Some(view_lights) = self.main_view_query.get_manual(world, view_entity)
-            .ok()
-            .and_then(|(view_lights, camera)| camera.render_shadows.then_some(view_lights))
-        {
+        if let Ok(view_lights) = self.main_view_query.get_manual(world, view_entity) {
             for view_light_entity in view_lights.lights.iter().copied() {
                 let Some(shadow_phase) = shadow_render_phases.get(&view_light_entity) else {
                     continue;

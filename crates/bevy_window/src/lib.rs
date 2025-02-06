@@ -115,9 +115,7 @@ impl Plugin for WindowPlugin {
             .add_event::<FileDragAndDrop>()
             .add_event::<WindowMoved>()
             .add_event::<WindowThemeChanged>()
-            .add_event::<AppLifecycle>()
-            .add_event::<MemoryWarning>()
-            .add_event::<OpenFile>();
+            .add_event::<AppLifecycle>();
 
         if let Some(primary_window) = &self.primary_window {
             let initial_focus = app

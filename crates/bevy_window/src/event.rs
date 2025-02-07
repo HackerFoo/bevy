@@ -406,6 +406,31 @@ impl AppLifecycle {
     }
 }
 
+#[derive(Event, Debug, Clone, Copy, PartialEq, Eq, Reflect)]
+#[reflect(Debug, PartialEq)]
+#[cfg_attr(
+    feature = "serialize",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+
+/// Warning that app may be terminated to reclaim memory.
+pub struct MemoryWarning;
+
+#[derive(Event, Debug, Clone, PartialEq, Eq, Reflect)]
+#[reflect(Debug, PartialEq)]
+#[cfg_attr(
+    feature = "serialize",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+
+/// File sent to app from OS.
+pub struct OpenFile {
+    /// Path of the file, should be read immediately.
+    pub path_buf: PathBuf
+}
+
 /// Wraps all `bevy_window` and `bevy_input` events in a common enum.
 ///
 /// Read these events with `EventReader<WindowEvent>` if you need to
@@ -452,6 +477,8 @@ pub enum WindowEvent {
 
     KeyboardInput(KeyboardInput),
     KeyboardFocusLost(KeyboardFocusLost),
+    MemoryWarning(MemoryWarning),
+    OpenFile(OpenFile),
 }
 
 impl From<AppLifecycle> for WindowEvent {
@@ -587,5 +614,15 @@ impl From<KeyboardInput> for WindowEvent {
 impl From<KeyboardFocusLost> for WindowEvent {
     fn from(e: KeyboardFocusLost) -> Self {
         Self::KeyboardFocusLost(e)
+    }
+}
+impl From<MemoryWarning> for WindowEvent {
+    fn from(e: MemoryWarning) -> Self {
+        Self::MemoryWarning(e)
+    }
+}
+impl From<OpenFile> for WindowEvent {
+    fn from(e: OpenFile) -> Self {
+        Self::OpenFile(e)
     }
 }

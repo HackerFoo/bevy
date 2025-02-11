@@ -2,7 +2,6 @@ use core::fmt::Debug;
 
 use crate::{primitives::Frustum, view::VisibilitySystems};
 use bevy_app::{App, Plugin, PostStartup, PostUpdate};
-use bevy_asset::AssetEvents;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
 use bevy_math::{ops, AspectRatio, Mat4, Rect, Vec2, Vec3A, Vec4};
@@ -30,9 +29,7 @@ impl Plugin for CameraProjectionPlugin {
             .add_systems(
                 PostUpdate,
                 (
-                    crate::camera::camera_system
-                        .in_set(CameraUpdateSystem)
-                        .before(AssetEvents),
+                    crate::camera::camera_system.in_set(CameraUpdateSystem),
                     crate::view::update_frusta
                         .in_set(VisibilitySystems::UpdateFrusta)
                         .after(crate::camera::camera_system)
@@ -330,7 +327,11 @@ pub struct PerspectiveProjection {
 
 impl CameraProjection for PerspectiveProjection {
     fn get_clip_from_view(&self) -> Mat4 {
-        Mat4::perspective_infinite_reverse_rh(self.fov, self.aspect_ratio, self.near)
+        Mat4::perspective_infinite_reverse_rh(
+            self.fov / self.aspect_ratio.sqrt(),
+            self.aspect_ratio,
+            self.near,
+        )
     }
 
     fn get_clip_from_view_for_sub(&self, sub_view: &super::SubCameraView) -> Mat4 {

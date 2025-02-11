@@ -52,8 +52,6 @@ fn prepass_alpha_discard(in: VertexOutput) {
             view.mip_bias
         );
     }
-#else
-    let flags = pbr_bindings::material.flags;
 #endif // VERTEX_UVS
 
     let alpha_mode = flags & pbr_types::STANDARD_MATERIAL_FLAGS_ALPHA_MODE_RESERVED_BITS;

@@ -4193,3 +4193,6 @@ name = "Occlusion Culling"
 description = "Demonstration of Occlusion Culling"
 category = "3D Rendering"
 wasm = false
+
+[patch.crates-io]
+winit = { path = "../winit" }

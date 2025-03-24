@@ -64,17 +64,11 @@ impl RenderDevice {
                         })
                 }
             }
-            _ => {
-                unsafe {
-                    self.device.create_shader_module_trusted(desc, wgpu::ShaderRuntimeChecks::unchecked())
-                }
-            }
+            _ => self.device.create_shader_module(desc),
         }
 
         #[cfg(not(feature = "spirv_shader_passthrough"))]
-        unsafe {
-            self.device.create_shader_module_trusted(desc, wgpu::ShaderRuntimeChecks::unchecked())
-        }
+        self.device.create_shader_module(desc)
     }
 
     /// Check for resource cleanups and mapping callbacks.

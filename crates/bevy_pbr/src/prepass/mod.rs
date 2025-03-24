@@ -603,7 +603,8 @@ where
         // prepass shader, or we are emulating unclipped depth in the fragment shader.
         let fragment_required = !targets.is_empty()
             || emulate_unclipped_depth
-            || self.prepass_material_fragment_shader.is_some();
+            || (key.mesh_key.contains(MeshPipelineKey::MAY_DISCARD)
+                && self.prepass_material_fragment_shader.is_some());
 
         let fragment = fragment_required.then(|| {
             // Use the fragment shader from the material

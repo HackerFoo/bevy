@@ -41,7 +41,7 @@ use bevy_window::{
     AppLifecycle, CursorEntered, CursorLeft, CursorMoved, FileDragAndDrop, Ime, RequestRedraw,
     Window, WindowBackendScaleFactorChanged, WindowCloseRequested, WindowDestroyed,
     WindowEvent as BevyWindowEvent, WindowFocused, WindowMoved, WindowOccluded, WindowResized,
-    WindowScaleFactorChanged, WindowThemeChanged, MemoryWarning, OpenFile,
+    WindowScaleFactorChanged, WindowThemeChanged,
 };
 #[cfg(target_os = "android")]
 use bevy_window::{PrimaryWindow, RawHandleWrapper};
@@ -628,20 +628,21 @@ impl<T: Event> ApplicationHandler<T> for WinitAppRunnerState<T> {
                         });
                     }
                     else {
-                        // HACK when showing an overlay, ControlFlow::Wait can be unbounded
-                        event_loop.set_control_flow(ControlFlow::WaitUntil(begin_frame_time + std::time::Duration::from_millis(25)));
+                        event_loop.set_control_flow(ControlFlow::Wait);
                     }
                 }
 
                 // Trigger the next redraw to refresh the screen immediately if waiting
-                if !matches!(event_loop.control_flow(), ControlFlow::Poll) {
+                if let ControlFlow::Wait = event_loop.control_flow() {
                     self.redraw_requested = true;
                 }
             }
             UpdateMode::Reactive { wait, .. } => {
                 // Set the next timeout, starting from the instant before running app.update() to avoid frame delays
-                if self.wait_elapsed {
-                    event_loop.set_control_flow(ControlFlow::WaitUntil(begin_frame_time + wait));
+                if let Some(next) = begin_frame_time.checked_add(wait) {
+                    if self.wait_elapsed {
+                        event_loop.set_control_flow(ControlFlow::WaitUntil(next));
+                    }
                 }
             }
         }
@@ -670,14 +671,6 @@ impl<T: Event> ApplicationHandler<T> for WinitAppRunnerState<T> {
     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
         let world = self.world_mut();
         world.clear_all();
-    }
-
-    fn memory_warning(&mut self, _event_loop: &ActiveEventLoop) {
-        self.bevy_window_events.send(MemoryWarning);
-    }
-
-    fn open_file(&mut self, _event_loop: &ActiveEventLoop, path_buf: std::path::PathBuf) {
-        self.bevy_window_events.send(OpenFile { path_buf });
     }
 }
 
@@ -808,12 +801,6 @@ impl<T: Event> WinitAppRunnerState<T> {
                     world.send_event(e);
                 }
                 BevyWindowEvent::KeyboardFocusLost(e) => {
-                    world.send_event(e);
-                }
-                BevyWindowEvent::MemoryWarning(e) => {
-                    world.send_event(e);
-                }
-                BevyWindowEvent::OpenFile(e) => {
                     world.send_event(e);
                 }
             }

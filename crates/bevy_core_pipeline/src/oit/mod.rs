@@ -133,7 +133,7 @@ impl Plugin for OrderIndependentTransparencyPlugin {
             .add_render_graph_edges(
                 Core3d,
                 (
-                    Node3d::MainTransmissivePass,
+                    Node3d::MainTransparentPass,
                     OitResolvePass,
                     Node3d::EndMainPass,
                 ),

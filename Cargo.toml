@@ -1,6 +1,6 @@
 [package]
 name = "bevy"
-version = "0.16.0-rc.1"
+version = "0.16.0-rc.2"
 edition = "2024"
 categories = ["game-engines", "graphics", "gui", "rendering"]
 description = "A refreshingly simple data-driven game engine and app framework"
@@ -527,12 +527,12 @@ libm = ["bevy_internal/libm"]
 web = ["bevy_internal/web"]
 
 [dependencies]
-bevy_internal = { path = "crates/bevy_internal", version = "0.16.0-rc.1", default-features = false }
+bevy_internal = { path = "crates/bevy_internal", version = "0.16.0-rc.2", default-features = false }
 tracing = { version = "0.1", default-features = false, optional = true }
 
 # Wasm does not support dynamic linking.
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-bevy_dylib = { path = "crates/bevy_dylib", version = "0.16.0-rc.1", default-features = false, optional = true }
+bevy_dylib = { path = "crates/bevy_dylib", version = "0.16.0-rc.2", default-features = false, optional = true }
 
 [dev-dependencies]
 rand = "0.8.0"
@@ -542,14 +542,14 @@ flate2 = "1.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 bytemuck = "1.7"
-bevy_render = { path = "crates/bevy_render", version = "0.16.0-rc.1", default-features = false }
+bevy_render = { path = "crates/bevy_render", version = "0.16.0-rc.2", default-features = false }
 # The following explicit dependencies are needed for proc macros to work inside of examples as they are part of the bevy crate itself.
-bevy_ecs = { path = "crates/bevy_ecs", version = "0.16.0-rc.1", default-features = false }
-bevy_state = { path = "crates/bevy_state", version = "0.16.0-rc.1", default-features = false }
-bevy_asset = { path = "crates/bevy_asset", version = "0.16.0-rc.1", default-features = false }
-bevy_reflect = { path = "crates/bevy_reflect", version = "0.16.0-rc.1", default-features = false }
-bevy_image = { path = "crates/bevy_image", version = "0.16.0-rc.1", default-features = false }
-bevy_gizmos = { path = "crates/bevy_gizmos", version = "0.16.0-rc.1", default-features = false }
+bevy_ecs = { path = "crates/bevy_ecs", version = "0.16.0-rc.2", default-features = false }
+bevy_state = { path = "crates/bevy_state", version = "0.16.0-rc.2", default-features = false }
+bevy_asset = { path = "crates/bevy_asset", version = "0.16.0-rc.2", default-features = false }
+bevy_reflect = { path = "crates/bevy_reflect", version = "0.16.0-rc.2", default-features = false }
+bevy_image = { path = "crates/bevy_image", version = "0.16.0-rc.2", default-features = false }
+bevy_gizmos = { path = "crates/bevy_gizmos", version = "0.16.0-rc.2", default-features = false }
 # Needed to poll Task examples
 futures-lite = "2.0.1"
 async-std = "1.13"
@@ -561,7 +561,7 @@ hyper = { version = "1", features = ["server", "http1"] }
 http-body-util = "0.1"
 anyhow = "1"
 macro_rules_attribute = "0.2"
-accesskit = "0.17"
+accesskit = "0.18"
 nonmax = "0.5"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
@@ -2203,6 +2203,7 @@ wasm = false
 name = "fallible_params"
 path = "examples/ecs/fallible_params.rs"
 doc-scrape-examples = true
+required-features = ["configurable_error_handler"]
 
 [package.metadata.example.fallible_params]
 name = "Fallible System Parameters"
@@ -2217,8 +2218,8 @@ doc-scrape-examples = true
 required-features = ["bevy_mesh_picking_backend", "configurable_error_handler"]
 
 [package.metadata.example.error_handling]
-name = "Fallible Systems"
-description = "Systems that return results to handle errors"
+name = "Error handling"
+description = "How to return and handle errors across the ECS"
 category = "ECS (Entity Component System)"
 wasm = false
 

@@ -1,6 +1,6 @@
 [package]
 name = "bevy_tasks"
-version = "0.16.0-rc.1"
+version = "0.16.0-rc.2"
 edition = "2024"
 description = "A task executor for Bevy Engine"
 homepage = "https://bevyengine.org"
@@ -26,12 +26,7 @@ async_executor = ["std", "dep:async-executor"]
 ## Allows access to the `std` crate. Enabling this feature will prevent compilation
 ## on `no_std` targets, but provides access to certain additional features on
 ## supported platforms.
-std = [
-  "futures-lite/std",
-  "async-task/std",
-  "bevy_platform_support/std",
-  "once_cell/std",
-]
+std = ["futures-lite/std", "async-task/std", "bevy_platform_support/std"]
 
 ## `critical-section` provides the building blocks for synchronization primitives
 ## on all platforms, including `no_std`.
@@ -47,7 +42,7 @@ web = [
 ]
 
 [dependencies]
-bevy_platform_support = { path = "../bevy_platform_support", version = "0.16.0-rc.1", default-features = false, features = [
+bevy_platform_support = { path = "../bevy_platform_support", version = "0.16.0-rc.2", default-features = false, features = [
   "alloc",
 ] }
 
@@ -65,9 +60,6 @@ async-channel = { version = "2.3.0", optional = true }
 async-io = { version = "2.0.0", optional = true }
 concurrent-queue = { version = "2.0.0", optional = true }
 atomic-waker = { version = "1", default-features = false }
-once_cell = { version = "1.18", default-features = false, features = [
-  "critical-section",
-] }
 crossbeam-queue = { version = "0.3", default-features = false, features = [
   "alloc",
 ] }

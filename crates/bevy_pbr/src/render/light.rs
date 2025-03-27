@@ -26,6 +26,7 @@ use bevy_render::{
     view::{NoIndirectDrawing, RetainedViewEntity},
 };
 use bevy_render::{
+    camera::ExtractedCamera,
     diagnostic::RecordDiagnostics,
     mesh::RenderMesh,
     primitives::{CascadesFrusta, CubemapFrusta, Frustum, HalfSpace},
@@ -2166,7 +2167,7 @@ pub struct LateShadowPassNode(ShadowPassNode);
 /// nodes.
 pub struct ShadowPassNode {
     /// The query that finds cameras in which shadows are visible.
-    main_view_query: QueryState<Read<ViewLightEntities>>,
+    main_view_query: QueryState<(Read<ViewLightEntities>, Read<ExtractedCamera>)>,
     /// The query that finds shadow cascades.
     view_light_query: QueryState<(Read<ShadowView>, Read<ExtractedView>, Has<OcclusionCulling>)>,
 }
@@ -2250,7 +2251,10 @@ impl ShadowPassNode {
 
         let time_span = diagnostics.time_span(render_context.command_encoder(), "shadows");
 
-        if let Ok(view_lights) = self.main_view_query.get_manual(world, view_entity) {
+        if let Some(view_lights) = self.main_view_query.get_manual(world, view_entity)
+            .ok()
+            .and_then(|(view_lights, camera)| camera.render_shadows.then_some(view_lights))
+        {
             for view_light_entity in view_lights.lights.iter().copied() {
                 let Ok((view_light, extracted_light_view, occlusion_culling)) =
                     self.view_light_query.get_manual(world, view_light_entity)

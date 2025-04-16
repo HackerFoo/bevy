@@ -162,11 +162,11 @@ impl Plugin for ClusteredDecalPlugin {
                 prepare_decals
                     .in_set(RenderSystems::ManageViews)
                     .after(prepare_lights),
-            )
-            .add_systems(
-                Render,
-                upload_decals.in_set(RenderSystems::PrepareResources),
             );
+            // .add_systems(
+            //     Render,
+            //     upload_decals.in_set(RenderSystems::PrepareResources),
+            // );
     }
 }
 

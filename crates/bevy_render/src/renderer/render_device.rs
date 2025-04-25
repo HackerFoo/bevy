@@ -40,9 +40,7 @@ impl RenderDevice {
     /// If any of these limits are exceeded, functions may panic.
     #[inline]
     pub fn limits(&self) -> wgpu::Limits {
-        let mut limits = self.device.limits();
-        limits.max_storage_buffers_per_shader_stage = 2;
-        limits
+        self.device.limits()
     }
 
     /// Creates a [`ShaderModule`](wgpu::ShaderModule) from either SPIR-V or WGSL source code.

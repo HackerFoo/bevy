@@ -696,20 +696,21 @@ impl<T: Event> WinitAppRunnerState<T> {
                         });
                     }
                     else {
-                        // HACK when showing an overlay, ControlFlow::Wait can be unbounded
-                        event_loop.set_control_flow(ControlFlow::WaitUntil(begin_frame_time + std::time::Duration::from_millis(25)));
+                        event_loop.set_control_flow(ControlFlow::Wait);
                     }
                 }
 
                 // Trigger the next redraw to refresh the screen immediately if waiting
-                if !matches!(event_loop.control_flow(), ControlFlow::Poll) {
+                if let ControlFlow::Wait = event_loop.control_flow() {
                     self.redraw_requested = true;
                 }
             }
             UpdateMode::Reactive { wait, .. } => {
                 // Set the next timeout, starting from the instant before running app.update() to avoid frame delays
-                if self.wait_elapsed {
-                    event_loop.set_control_flow(ControlFlow::WaitUntil(begin_frame_time + wait));
+                if let Some(next) = begin_frame_time.checked_add(wait) {
+                    if self.wait_elapsed {
+                        event_loop.set_control_flow(ControlFlow::WaitUntil(next));
+                    }
                 }
             }
         }
@@ -855,12 +856,6 @@ impl<T: Event> WinitAppRunnerState<T> {
                     world.send_event(e);
                 }
                 BevyWindowEvent::KeyboardFocusLost(e) => {
-                    world.send_event(e);
-                }
-                BevyWindowEvent::MemoryWarning(e) => {
-                    world.send_event(e);
-                }
-                BevyWindowEvent::OpenFile(e) => {
                     world.send_event(e);
                 }
             }

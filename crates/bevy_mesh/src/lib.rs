@@ -6,6 +6,7 @@ extern crate core;
 mod conversions;
 mod index;
 mod mesh;
+#[cfg(feature = "bevy_mikktspace")]
 mod mikktspace;
 pub mod morph;
 pub mod primitives;
@@ -14,6 +15,7 @@ mod vertex;
 use bitflags::bitflags;
 pub use index::*;
 pub use mesh::*;
+#[cfg(feature = "bevy_mikktspace")]
 pub use mikktspace::*;
 pub use primitives::*;
 pub use vertex::*;

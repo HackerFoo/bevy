@@ -139,6 +139,7 @@ default = [
   "bevy_input_focus",
   "bevy_log",
   "bevy_mesh_picking_backend",
+  "bevy_mikktspace",
   "bevy_pbr",
   "bevy_picking",
   "bevy_render",
@@ -525,6 +526,8 @@ libm = ["bevy_internal/libm"]
 
 # Enables use of browser APIs. Note this is currently only applicable on `wasm32` architectures.
 web = ["bevy_internal/web"]
+
+bevy_mikktspace = ["bevy_render/bevy_mikktspace"]
 
 [dependencies]
 bevy_internal = { path = "crates/bevy_internal", version = "0.16.1", default-features = false }

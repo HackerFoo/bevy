@@ -2,13 +2,19 @@ use bevy_transform::components::Transform;
 pub use wgpu_types::PrimitiveTopology;
 
 use super::{
-    generate_tangents_for_mesh, scale_normal, triangle_area_normal, triangle_normal, FourIterators,
-    GenerateTangentsError, Indices, MeshAttributeData, MeshTrianglesError, MeshVertexAttribute,
+    triangle_area_normal, triangle_normal, FourIterators,
+    Indices, MeshAttributeData, MeshTrianglesError, MeshVertexAttribute,
     MeshVertexAttributeId, MeshVertexBufferLayout, MeshVertexBufferLayoutRef,
     MeshVertexBufferLayouts, MeshWindingInvertError, VertexAttributeValues, VertexBufferLayout,
 };
 #[cfg(feature = "serialize")]
 use crate::SerializedMeshAttributeData;
+
+#[cfg(feature = "bevy_mikktspace")]
+use super::{
+    generate_tangents_for_mesh, scale_normal, GenerateTangentsError
+};
+
 use alloc::collections::BTreeMap;
 use bevy_asset::{Asset, Handle, RenderAssetUsages};
 use bevy_image::Image;
@@ -25,6 +31,11 @@ use wgpu_types::{VertexAttribute, VertexFormat, VertexStepMode};
 
 pub const INDEX_BUFFER_ASSET_INDEX: u64 = 0;
 pub const VERTEX_ATTRIBUTE_BUFFER_ID: u64 = 10;
+
+#[cfg(not(feature = "bevy_mikktspace"))]
+fn scale_normal(normal: Vec3, scale_recip: Vec3) -> Vec3 {
+    normal * scale_recip
+}
 
 /// A 3D object made out of vertices representing triangles, lines, or points,
 /// with "attribute" values for each vertex.
@@ -935,6 +946,7 @@ impl Mesh {
     ///
     /// Sets the [`Mesh::ATTRIBUTE_TANGENT`] attribute if successful.
     /// Requires a [`PrimitiveTopology::TriangleList`] topology and the [`Mesh::ATTRIBUTE_POSITION`], [`Mesh::ATTRIBUTE_NORMAL`] and [`Mesh::ATTRIBUTE_UV_0`] attributes set.
+    #[cfg(feature = "bevy_mikktspace")]
     pub fn generate_tangents(&mut self) -> Result<(), GenerateTangentsError> {
         let tangents = generate_tangents_for_mesh(self)?;
         self.insert_attribute(Mesh::ATTRIBUTE_TANGENT, tangents);
@@ -948,8 +960,13 @@ impl Mesh {
     /// (Alternatively, you can use [`Mesh::generate_tangents`] to mutate an existing mesh in-place)
     ///
     /// Requires a [`PrimitiveTopology::TriangleList`] topology and the [`Mesh::ATTRIBUTE_POSITION`], [`Mesh::ATTRIBUTE_NORMAL`] and [`Mesh::ATTRIBUTE_UV_0`] attributes set.
+    #[cfg(feature = "bevy_mikktspace")]
     pub fn with_generated_tangents(mut self) -> Result<Mesh, GenerateTangentsError> {
         self.generate_tangents()?;
+        Ok(self)
+    }
+    #[cfg(not(feature = "bevy_mikktspace"))]
+    pub fn with_generated_tangents(self) -> Result<Mesh, core::convert::Infallible> {
         Ok(self)
     }
 

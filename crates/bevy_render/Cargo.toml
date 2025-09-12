@@ -47,7 +47,6 @@ ci_limits = []
 webgl = ["wgpu/webgl"]
 webgpu = ["wgpu/webgpu"]
 detailed_trace = []
-bevy_mikktspace = ["bevy_mesh/bevy_mikktspace"]
 
 [dependencies]
 # bevy

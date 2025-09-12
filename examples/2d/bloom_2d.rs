@@ -1,10 +1,8 @@
 //! Illustrates bloom post-processing in 2d.
 
 use bevy::{
-    core_pipeline::{
-        bloom::{Bloom, BloomCompositeMode},
-        tonemapping::{DebandDither, Tonemapping},
-    },
+    core_pipeline::tonemapping::{DebandDither, Tonemapping},
+    post_process::bloom::{Bloom, BloomCompositeMode},
     prelude::*,
 };
 
@@ -25,7 +23,6 @@ fn setup(
     commands.spawn((
         Camera2d,
         Camera {
-            hdr: true, // 1. HDR is required for bloom
             clear_color: ClearColorConfig::Custom(Color::BLACK),
             ..default()
         },
@@ -63,8 +60,8 @@ fn setup(
         Text::default(),
         Node {
             position_type: PositionType::Absolute,
-            top: Val::Px(12.0),
-            left: Val::Px(12.0),
+            top: px(12),
+            left: px(12),
             ..default()
         },
     ));
@@ -84,17 +81,17 @@ fn update_bloom_settings(
     match bloom {
         Some(mut bloom) => {
             text.0 = "Bloom (Toggle: Space)\n".to_string();
-            text.push_str(&format!("(Q/A) Intensity: {}\n", bloom.intensity));
+            text.push_str(&format!("(Q/A) Intensity: {:.2}\n", bloom.intensity));
             text.push_str(&format!(
-                "(W/S) Low-frequency boost: {}\n",
+                "(W/S) Low-frequency boost: {:.2}\n",
                 bloom.low_frequency_boost
             ));
             text.push_str(&format!(
-                "(E/D) Low-frequency boost curvature: {}\n",
+                "(E/D) Low-frequency boost curvature: {:.2}\n",
                 bloom.low_frequency_boost_curvature
             ));
             text.push_str(&format!(
-                "(R/F) High-pass frequency: {}\n",
+                "(R/F) High-pass frequency: {:.2}\n",
                 bloom.high_pass_frequency
             ));
             text.push_str(&format!(
@@ -104,12 +101,15 @@ fn update_bloom_settings(
                     BloomCompositeMode::Additive => "Additive",
                 }
             ));
-            text.push_str(&format!("(Y/H) Threshold: {}\n", bloom.prefilter.threshold));
             text.push_str(&format!(
-                "(U/J) Threshold softness: {}\n",
+                "(Y/H) Threshold: {:.2}\n",
+                bloom.prefilter.threshold
+            ));
+            text.push_str(&format!(
+                "(U/J) Threshold softness: {:.2}\n",
                 bloom.prefilter.threshold_softness
             ));
-            text.push_str(&format!("(I/K) Horizontal Scale: {}\n", bloom.scale.x));
+            text.push_str(&format!("(I/K) Horizontal Scale: {:.2}\n", bloom.scale.x));
 
             if keycode.just_pressed(KeyCode::Space) {
                 commands.entity(camera_entity).remove::<Bloom>();
@@ -191,7 +191,7 @@ fn update_bloom_settings(
         }
     }
 
-    text.push_str(&format!("(O) Tonemapping: {:?}\n", tonemapping));
+    text.push_str(&format!("(O) Tonemapping: {tonemapping:?}\n"));
     if keycode.just_pressed(KeyCode::KeyO) {
         commands
             .entity(camera_entity)

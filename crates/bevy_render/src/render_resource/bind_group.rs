@@ -1,9 +1,8 @@
-use crate::renderer::WgpuWrapper;
 use crate::{
     define_atomic_id,
     render_asset::RenderAssets,
     render_resource::{BindGroupLayout, Buffer, Sampler, TextureView},
-    renderer::RenderDevice,
+    renderer::{RenderDevice, WgpuWrapper},
     texture::GpuImage,
 };
 use bevy_derive::{Deref, DerefMut};
@@ -133,12 +132,12 @@ impl Deref for BindGroup {
 /// In WGSL shaders, the binding would look like this:
 ///
 /// ```wgsl
-/// @group(2) @binding(0) var<uniform> color: vec4<f32>;
-/// @group(2) @binding(1) var color_texture: texture_2d<f32>;
-/// @group(2) @binding(2) var color_sampler: sampler;
-/// @group(2) @binding(3) var<storage> storage_buffer: array<f32>;
-/// @group(2) @binding(4) var<storage> raw_buffer: array<f32>;
-/// @group(2) @binding(5) var storage_texture: texture_storage_2d<rgba8unorm, read_write>;
+/// @group(#{MATERIAL_BIND_GROUP}) @binding(0) var<uniform> color: vec4<f32>;
+/// @group(#{MATERIAL_BIND_GROUP}) @binding(1) var color_texture: texture_2d<f32>;
+/// @group(#{MATERIAL_BIND_GROUP}) @binding(2) var color_sampler: sampler;
+/// @group(#{MATERIAL_BIND_GROUP}) @binding(3) var<storage> storage_buffer: array<f32>;
+/// @group(#{MATERIAL_BIND_GROUP}) @binding(4) var<storage> raw_buffer: array<f32>;
+/// @group(#{MATERIAL_BIND_GROUP}) @binding(5) var storage_texture: texture_storage_2d<rgba8unorm, read_write>;
 /// ```
 /// Note that the "group" index is determined by the usage context. It is not defined in [`AsBindGroup`]. For example, in Bevy material bind groups
 /// are generally bound to group 2.
@@ -261,7 +260,7 @@ impl Deref for BindGroup {
 ///     roughness: f32,
 /// };
 ///
-/// @group(2) @binding(0) var<uniform> material: CoolMaterial;
+/// @group(#{MATERIAL_BIND_GROUP}) @binding(0) var<uniform> material: CoolMaterial;
 /// ```
 ///
 /// Some less common scenarios will require "struct-level" attributes. These are the currently supported struct-level attributes:
@@ -312,7 +311,7 @@ impl Deref for BindGroup {
 /// declaration:
 ///
 /// ```wgsl
-/// @group(2) @binding(10) var<storage> material_array: binding_array<StandardMaterial>;
+/// @group(#{MATERIAL_BIND_GROUP}) @binding(10) var<storage> material_array: binding_array<StandardMaterial>;
 /// ```
 ///
 /// On the other hand, if you write this declaration:
@@ -325,7 +324,7 @@ impl Deref for BindGroup {
 /// Then Bevy produces a binding that matches this WGSL declaration instead:
 ///
 /// ```wgsl
-/// @group(2) @binding(10) var<storage> material_array: array<StandardMaterial>;
+/// @group(#{MATERIAL_BIND_GROUP}) @binding(10) var<storage> material_array: array<StandardMaterial>;
 /// ```
 ///
 /// * Just as with the structure-level `uniform` attribute, Bevy converts the
@@ -338,7 +337,7 @@ impl Deref for BindGroup {
 ///   this in WGSL in non-bindless mode:
 ///
 /// ```wgsl
-/// @group(2) @binding(0) var<uniform> material: StandardMaterial;
+/// @group(#{MATERIAL_BIND_GROUP}) @binding(0) var<uniform> material: StandardMaterial;
 /// ```
 ///
 /// * For efficiency reasons, `data` is generally preferred over `uniform`
@@ -481,6 +480,9 @@ impl Deref for BindGroup {
 ///     is_shaded: bool,
 /// }
 ///
+/// // Materials keys are intended to be small, cheap to hash, and
+/// // uniquely identify a specific material permutation.
+/// #[repr(C)]
 /// #[derive(Copy, Clone, Hash, Eq, PartialEq)]
 /// struct CoolMaterialKey {
 ///     is_shaded: bool,
@@ -531,8 +533,8 @@ pub trait AsBindGroup {
         layout: &BindGroupLayout,
         render_device: &RenderDevice,
         param: &mut SystemParamItem<'_, '_, Self::Param>,
-    ) -> Result<PreparedBindGroup<Self::Data>, AsBindGroupError> {
-        let UnpreparedBindGroup { bindings, data } =
+    ) -> Result<PreparedBindGroup, AsBindGroupError> {
+        let UnpreparedBindGroup { bindings } =
             Self::unprepared_bind_group(self, layout, render_device, param, false)?;
 
         let entries = bindings
@@ -548,9 +550,10 @@ pub trait AsBindGroup {
         Ok(PreparedBindGroup {
             bindings,
             bind_group,
-            data,
         })
     }
+
+    fn bind_group_data(&self) -> Self::Data;
 
     /// Returns a vec of (binding index, `OwnedBindingResource`).
     ///
@@ -569,7 +572,7 @@ pub trait AsBindGroup {
         render_device: &RenderDevice,
         param: &mut SystemParamItem<'_, '_, Self::Param>,
         force_no_bindless: bool,
-    ) -> Result<UnpreparedBindGroup<Self::Data>, AsBindGroupError>;
+    ) -> Result<UnpreparedBindGroup, AsBindGroupError>;
 
     /// Creates the bind group layout matching all bind groups returned by
     /// [`AsBindGroup::as_bind_group`]
@@ -613,16 +616,14 @@ pub enum AsBindGroupError {
 }
 
 /// A prepared bind group returned as a result of [`AsBindGroup::as_bind_group`].
-pub struct PreparedBindGroup<T> {
+pub struct PreparedBindGroup {
     pub bindings: BindingResources,
     pub bind_group: BindGroup,
-    pub data: T,
 }
 
 /// a map containing `OwnedBindingResource`s, keyed by the target binding index
-pub struct UnpreparedBindGroup<T> {
+pub struct UnpreparedBindGroup {
     pub bindings: BindingResources,
-    pub data: T,
 }
 
 /// A pair of binding index and binding resource, used as part of
@@ -655,7 +656,7 @@ impl OwnedBindingResource {
     /// [`OwnedBindingResource::Data`], because [`OwnedData`] doesn't itself
     /// correspond to any binding and instead requires the
     /// `MaterialBindGroupAllocator` to pack it into a buffer.
-    pub fn get_binding(&self) -> BindingResource {
+    pub fn get_binding(&self) -> BindingResource<'_> {
         match self {
             OwnedBindingResource::Buffer(buffer) => buffer.as_entire_binding(),
             OwnedBindingResource::TextureView(_, view) => BindingResource::TextureView(view),
@@ -695,6 +696,10 @@ mod test {
 
     #[test]
     fn texture_visibility() {
+        #[expect(
+            dead_code,
+            reason = "This is a derive macro compilation test. It will not be constructed."
+        )]
         #[derive(AsBindGroup)]
         pub struct TextureVisibilityTest {
             #[texture(0, visibility(all))]

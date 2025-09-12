@@ -1,13 +1,10 @@
-use bevy_asset::{Asset, AssetEvent, AssetId, Assets};
-use bevy_ecs::{event::EventReader, resource::Resource, system::ResMut};
+use bevy_asset::{AssetEvent, AssetId, Assets, RenderAssetUsages};
+use bevy_ecs::{message::MessageReader, resource::Resource, system::ResMut};
 use bevy_image::prelude::*;
 use bevy_math::{IVec2, UVec2};
 use bevy_platform::collections::HashMap;
 use bevy_reflect::TypePath;
-use bevy_render::{
-    render_asset::RenderAssetUsages,
-    render_resource::{Extent3d, TextureDimension, TextureFormat},
-};
+use wgpu_types::{Extent3d, TextureDimension, TextureFormat};
 
 use crate::{error::TextError, Font, FontAtlas, FontSmoothing, GlyphAtlasInfo};
 
@@ -34,7 +31,7 @@ impl FontAtlasSets {
 /// A system that cleans up [`FontAtlasSet`]s for removed [`Font`]s
 pub fn remove_dropped_font_atlas_sets(
     mut font_atlas_sets: ResMut<FontAtlasSets>,
-    mut font_events: EventReader<AssetEvent<Font>>,
+    mut font_events: MessageReader<AssetEvent<Font>>,
 ) {
     for event in font_events.read() {
         if let AssetEvent::Removed { id } = event {
@@ -53,19 +50,11 @@ pub struct FontAtlasKey(pub u32, pub FontSmoothing);
 ///
 /// Provides the interface for adding and retrieving rasterized glyphs, and manages the [`FontAtlas`]es.
 ///
-/// A `FontAtlasSet` is an [`Asset`].
-///
-/// There is one `FontAtlasSet` for each font:
-/// - When a [`Font`] is loaded as an asset and then used in [`TextFont`](crate::TextFont),
-///   a `FontAtlasSet` asset is created from a weak handle to the `Font`.
-/// - ~When a font is loaded as a system font, and then used in [`TextFont`](crate::TextFont),
-///   a `FontAtlasSet` asset is created and stored with a strong handle to the `FontAtlasSet`.~
-///   (*Note that system fonts are not currently supported by the `TextPipeline`.*)
+/// There is at most one `FontAtlasSet` for each font, stored in the `FontAtlasSets` resource.
+/// `FontAtlasSet`s are added and updated by the [`queue_text`](crate::pipeline::TextPipeline::queue_text) function.
 ///
 /// A `FontAtlasSet` contains one or more [`FontAtlas`]es for each font size.
-///
-/// It is used by [`TextPipeline::queue_text`](crate::TextPipeline::queue_text).
-#[derive(Debug, TypePath, Asset)]
+#[derive(Debug, TypePath)]
 pub struct FontAtlasSet {
     font_atlases: HashMap<FontAtlasKey, Vec<FontAtlas>>,
 }
@@ -180,8 +169,8 @@ impl FontAtlasSet {
                         .get_glyph_index(cache_key)
                         .map(|location| GlyphAtlasInfo {
                             location,
-                            texture_atlas: atlas.texture_atlas.clone_weak(),
-                            texture: atlas.texture.clone_weak(),
+                            texture_atlas: atlas.texture_atlas.id(),
+                            texture: atlas.texture.id(),
                         })
                 })
             })

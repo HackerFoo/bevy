@@ -4,10 +4,12 @@
 
 use bevy::{
     core_pipeline::prepass::{DepthPrepass, MotionVectorPrepass, NormalPrepass},
-    pbr::{NotShadowCaster, PbrPlugin},
+    light::NotShadowCaster,
+    pbr::PbrPlugin,
     prelude::*,
     reflect::TypePath,
-    render::render_resource::{AsBindGroup, ShaderRef, ShaderType},
+    render::render_resource::{AsBindGroup, ShaderType},
+    shader::ShaderRef,
 };
 
 /// This example uses a shader source file from the assets subdirectory
@@ -123,23 +125,22 @@ fn setup(
         Transform::from_xyz(4.0, 8.0, 4.0),
     ));
 
-    commands
-        .spawn((
-            Text::default(),
-            Node {
-                position_type: PositionType::Absolute,
-                top: Val::Px(12.0),
-                left: Val::Px(12.0),
-                ..default()
-            },
-        ))
-        .with_children(|p| {
-            p.spawn(TextSpan::new("Prepass Output: transparent\n"));
-            p.spawn(TextSpan::new("\n\n"));
-            p.spawn(TextSpan::new("Controls\n"));
-            p.spawn(TextSpan::new("---------------\n"));
-            p.spawn(TextSpan::new("Space - Change output\n"));
-        });
+    commands.spawn((
+        Text::default(),
+        Node {
+            position_type: PositionType::Absolute,
+            top: px(12),
+            left: px(12),
+            ..default()
+        },
+        children![
+            TextSpan::new("Prepass Output: transparent\n"),
+            TextSpan::new("\n\n"),
+            TextSpan::new("Controls\n"),
+            TextSpan::new("---------------\n"),
+            TextSpan::new("Space - Change output\n"),
+        ],
+    ));
 }
 
 // This is the struct that will be passed to your shader

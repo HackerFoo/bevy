@@ -45,7 +45,6 @@ gles = ["wgpu/gles"]
 detailed_trace = []
 ## Adds serialization support through `serde`.
 serialize = ["bevy_mesh/serialize"]
-bevy_mikktspace = ["bevy_mesh/bevy_mikktspace"]
 
 [dependencies]
 # bevy

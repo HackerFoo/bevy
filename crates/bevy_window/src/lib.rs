@@ -122,9 +122,7 @@ impl Plugin for WindowPlugin {
             .add_message::<FileDragAndDrop>()
             .add_message::<WindowMoved>()
             .add_message::<WindowThemeChanged>()
-            .add_message::<AppLifecycle>()
-            .add_message::<MemoryWarning>()
-            .add_message::<OpenFile>();
+            .add_message::<AppLifecycle>();
 
         if let Some(primary_window) = &self.primary_window {
             let mut entity_commands = app.world_mut().spawn(primary_window.clone());

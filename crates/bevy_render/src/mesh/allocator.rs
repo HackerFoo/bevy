@@ -565,6 +565,9 @@ impl MeshAllocator {
         let Some(slab) = self.slabs.get_mut(&slab_id) else {
             return;
         };
+        if len == 0 {
+            return;
+        }
 
         match *slab {
             Slab::General(ref mut general_slab) => {

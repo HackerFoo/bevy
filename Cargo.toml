@@ -143,7 +143,6 @@ default = [
   "bevy_input_focus",
   "bevy_log",
   "bevy_mesh_picking_backend",
-  "bevy_mikktspace",
   "bevy_pbr",
   "bevy_picking",
   "bevy_render",
@@ -587,8 +586,6 @@ hotpatching = ["bevy_internal/hotpatching"]
 
 # Enable collecting debug information about systems and components to help with diagnostics
 debug = ["bevy_internal/debug"]
-
-bevy_mikktspace = ["bevy_render/bevy_mikktspace"]
 
 [dependencies]
 bevy_internal = { path = "crates/bevy_internal", version = "0.17.1", default-features = false }
@@ -4723,6 +4720,3 @@ name = "Render Depth to Texture"
 description = "Demonstrates how to use depth-only cameras"
 category = "Shaders"
 wasm = true
-
-[patch.crates-io]
-winit = { path = "../winit" }

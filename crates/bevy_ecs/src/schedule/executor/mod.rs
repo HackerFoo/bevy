@@ -53,7 +53,7 @@ pub fn default_executor() -> Box<dyn SystemExecutor> {
         feature = "multi_threaded"
     ))]
     {
-        Box::new(MultiThreadedExecutor::new())
+        Box::new(MultiThreadedExecutor::default())
     }
     #[cfg(any(
         target_arch = "wasm32",

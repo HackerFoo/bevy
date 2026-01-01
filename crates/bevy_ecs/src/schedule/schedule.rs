@@ -220,7 +220,8 @@ fn make_executor(kind: ExecutorKind) -> Box<dyn SystemExecutor> {
         ExecutorKind::Simple => Box::new(SimpleExecutor::new()),
         ExecutorKind::SingleThreaded => Box::new(SingleThreadedExecutor::new()),
         #[cfg(feature = "std")]
-        ExecutorKind::MultiThreaded => Box::new(MultiThreadedExecutor::new()),
+        ExecutorKind::MultiThreaded => Box::new(MultiThreadedExecutor::new(false)),
+        ExecutorKind::MultiThreadedUsingCallingThread => Box::new(MultiThreadedExecutor::new(true)),
     }
 }
 

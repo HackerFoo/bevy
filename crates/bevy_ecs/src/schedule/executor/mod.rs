@@ -73,6 +73,7 @@ pub enum ExecutorKind {
     #[cfg(feature = "std")]
     #[cfg_attr(all(not(target_arch = "wasm32"), feature = "multi_threaded"), default)]
     MultiThreaded,
+    MultiThreadedUsingCallingThread,
 }
 
 /// Holds systems and conditions of a [`Schedule`](super::Schedule) sorted in topological order

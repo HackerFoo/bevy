@@ -335,11 +335,8 @@ pub struct PerspectiveProjection {
 
 impl CameraProjection for PerspectiveProjection {
     fn get_clip_from_view(&self) -> Mat4 {
-        let mut matrix = Mat4::perspective_infinite_reverse_rh(
-            self.fov / self.aspect_ratio.sqrt(),
-            self.aspect_ratio,
-            self.near,
-        );
+        let mut matrix =
+            Mat4::perspective_infinite_reverse_rh(self.fov, self.aspect_ratio, self.near);
         self.adjust_perspective_matrix_for_clip_plane(&mut matrix);
         matrix
     }

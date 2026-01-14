@@ -1,6 +1,6 @@
 [package]
 name = "bevy"
-version = "0.18.0-rc.2"
+version = "0.18.0"
 edition = "2024"
 categories = ["game-engines", "graphics", "gui", "rendering"]
 description = "A refreshingly simple data-driven game engine and app framework"
@@ -310,7 +310,7 @@ bevy_post_process = ["bevy_internal/bevy_post_process"]
 bevy_anti_alias = ["bevy_internal/bevy_anti_alias"]
 
 # Adds gamepad support
-bevy_gilrs = ["bevy_internal/bevy_gilrs"]
+bevy_gilrs = ["gamepad", "bevy_internal/bevy_gilrs"]
 
 # [glTF](https://www.khronos.org/gltf/) support
 bevy_gltf = ["bevy_internal/bevy_gltf"]
@@ -711,12 +711,12 @@ hotpatching = ["bevy_internal/hotpatching"]
 debug = ["bevy_internal/debug"]
 
 [dependencies]
-bevy_internal = { path = "crates/bevy_internal", version = "0.18.0-rc.2", default-features = false }
+bevy_internal = { path = "crates/bevy_internal", version = "0.18.0", default-features = false }
 tracing = { version = "0.1", default-features = false, optional = true }
 
 # Wasm does not support dynamic linking.
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-bevy_dylib = { path = "crates/bevy_dylib", version = "0.18.0-rc.2", default-features = false, optional = true }
+bevy_dylib = { path = "crates/bevy_dylib", version = "0.18.0", default-features = false, optional = true }
 
 [dev-dependencies]
 rand = "0.9.0"
@@ -727,14 +727,14 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.140"
 bytemuck = "1"
 # The following explicit dependencies are needed for proc macros to work inside of examples as they are part of the bevy crate itself.
-bevy_animation = { path = "crates/bevy_animation", version = "0.18.0-rc.2", default-features = false }
-bevy_asset = { path = "crates/bevy_asset", version = "0.18.0-rc.2", default-features = false }
-bevy_ecs = { path = "crates/bevy_ecs", version = "0.18.0-rc.2", default-features = false }
-bevy_gizmos = { path = "crates/bevy_gizmos", version = "0.18.0-rc.2", default-features = false }
-bevy_image = { path = "crates/bevy_image", version = "0.18.0-rc.2", default-features = false }
-bevy_reflect = { path = "crates/bevy_reflect", version = "0.18.0-rc.2", default-features = false }
-bevy_render = { path = "crates/bevy_render", version = "0.18.0-rc.2", default-features = false }
-bevy_state = { path = "crates/bevy_state", version = "0.18.0-rc.2", default-features = false }
+bevy_animation = { path = "crates/bevy_animation", version = "0.18.0", default-features = false }
+bevy_asset = { path = "crates/bevy_asset", version = "0.18.0", default-features = false }
+bevy_ecs = { path = "crates/bevy_ecs", version = "0.18.0", default-features = false }
+bevy_gizmos = { path = "crates/bevy_gizmos", version = "0.18.0", default-features = false }
+bevy_image = { path = "crates/bevy_image", version = "0.18.0", default-features = false }
+bevy_reflect = { path = "crates/bevy_reflect", version = "0.18.0", default-features = false }
+bevy_render = { path = "crates/bevy_render", version = "0.18.0", default-features = false }
+bevy_state = { path = "crates/bevy_state", version = "0.18.0", default-features = false }
 # Needed to poll Task examples
 futures-lite = "2.0.1"
 futures-timer = { version = "3", features = ["wasm-bindgen", "gloo-timers"] }
@@ -814,13 +814,25 @@ category = "2D Rendering"
 wasm = true
 
 [[example]]
+name = "rotate_to_cursor"
+path = "examples/2d/rotate_to_cursor.rs"
+# Causes an ICE on docs.rs
+doc-scrape-examples = false
+
+[package.metadata.example.rotate_to_cursor]
+name = "2D Rotation to Cursor"
+description = "Demonstrates rotating entities in 2D to follow the cursor"
+category = "2D Rendering"
+wasm = true
+
+[[example]]
 name = "rotation"
 path = "examples/2d/rotation.rs"
 # Causes an ICE on docs.rs
 doc-scrape-examples = false
 
 [package.metadata.example.rotation]
-name = "2D Rotation"
+name = "Generic 2D Rotation"
 description = "Demonstrates rotating entities in 2D with quaternions"
 category = "2D Rendering"
 wasm = true

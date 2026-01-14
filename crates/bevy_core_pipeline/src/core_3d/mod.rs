@@ -212,10 +212,10 @@ impl Plugin for Core3dPlugin {
                 Core3d,
                 Node3d::MainTransmissivePass,
             )
-            // .add_render_graph_node::<ViewNodeRunner<MainTransparentPass3dNode>>(
-            //     Core3d,
-            //     Node3d::MainTransparentPass,
-            // )
+            .add_render_graph_node::<ViewNodeRunner<MainTransparentPass3dNode>>(
+                Core3d,
+                Node3d::MainTransparentPass,
+            )
             .add_render_graph_node::<EmptyNode>(Core3d, Node3d::EndMainPass)
             .add_render_graph_node::<EmptyNode>(Core3d, Node3d::StartMainPassPostProcessing)
             .add_render_graph_node::<ViewNodeRunner<TonemappingNode>>(Core3d, Node3d::Tonemapping)
@@ -233,7 +233,7 @@ impl Plugin for Core3dPlugin {
                     Node3d::StartMainPass,
                     Node3d::MainOpaquePass,
                     Node3d::MainTransmissivePass,
-                    // Node3d::MainTransparentPass,
+                    Node3d::MainTransparentPass,
                     Node3d::EndMainPass,
                     Node3d::StartMainPassPostProcessing,
                     Node3d::Tonemapping,

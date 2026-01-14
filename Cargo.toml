@@ -5266,6 +5266,3 @@ name = "Mirror"
 description = "Demonstrates how to create a mirror with a second camera"
 category = "3D Rendering"
 wasm = true
-
-[patch.crates-io]
-winit = { path = "../winit" }

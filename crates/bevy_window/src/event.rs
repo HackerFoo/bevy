@@ -587,7 +587,9 @@ pub enum WindowEvent {
     ///
     /// Used to clear pressed key state.
     KeyboardFocusLost(KeyboardFocusLost),
+    /// Warning to reduce memory usage.
     MemoryWarning(MemoryWarning),
+    /// Request to open a file.
     OpenFile(OpenFile),
 }
 

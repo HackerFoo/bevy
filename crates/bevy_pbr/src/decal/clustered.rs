@@ -524,6 +524,7 @@ impl RenderClusteredDecals {
 
 /// Uploads the list of decals from [`RenderClusteredDecals::decals`] to the
 /// GPU.
+#[allow(dead_code)]
 fn upload_decals(
     render_decals: Res<RenderClusteredDecals>,
     mut decals_buffer: ResMut<DecalsBuffer>,

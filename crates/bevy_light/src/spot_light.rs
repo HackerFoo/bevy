@@ -8,7 +8,7 @@ use bevy_ecs::prelude::*;
 use bevy_image::Image;
 use bevy_math::{Affine3A, Dir3, Mat3, Mat4, Vec3};
 use bevy_reflect::prelude::*;
-use bevy_transform::components::{GlobalTransform, Transform};
+use bevy_transform::components::GlobalTransform;
 
 use crate::cluster::{ClusterVisibilityClass, GlobalVisibleClusterableObjects};
 

@@ -644,6 +644,7 @@ pub const fn tonemapping_pipeline_key(tonemapping: Tonemapping) -> MeshPipelineK
         }
         Tonemapping::TonyMcMapface => MeshPipelineKey::TONEMAP_METHOD_TONY_MC_MAPFACE,
         Tonemapping::BlenderFilmic => MeshPipelineKey::TONEMAP_METHOD_BLENDER_FILMIC,
+        Tonemapping::Pq => MeshPipelineKey::TONEMAP_METHOD_PQ,
     }
 }
 

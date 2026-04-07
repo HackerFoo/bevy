@@ -43,7 +43,6 @@ use crate::{
 #[require(
     CubemapFrusta,
     CubemapVisibleEntities,
-    Transform,
     Visibility,
     VisibilityClass
 )]

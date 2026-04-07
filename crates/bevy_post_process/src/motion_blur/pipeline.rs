@@ -111,7 +111,6 @@ pub fn init_motion_blur_pipeline(
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub struct MotionBlurPipelineKey {
     hdr: bool,
-    hdr_output: bool,
     samples: u32,
 }
 
@@ -128,10 +127,6 @@ impl SpecializedRenderPipeline for MotionBlurPipeline {
 
         if key.samples > 1 {
             shader_defs.push(ShaderDefVal::from("MULTISAMPLED"));
-        }
-
-        if key.hdr_output {
-            shader_defs.push("HDR_OUTPUT".into());
         }
 
         #[cfg(all(feature = "webgl", target_arch = "wasm32", not(feature = "webgpu")))]
@@ -179,7 +174,6 @@ pub(crate) fn prepare_motion_blur_pipelines(
             &pipeline,
             MotionBlurPipelineKey {
                 hdr: view.hdr,
-                hdr_output: view.hdr_output,
                 samples: msaa.samples(),
             },
         );

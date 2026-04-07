@@ -67,7 +67,6 @@ use bevy_text::{
     TextColor, TextLayoutInfo, Underline, UnderlineColor,
 };
 use bevy_transform::components::GlobalTransform;
-use bevy_window::{PrimaryWindow, Window};
 use box_shadow::BoxShadowPlugin;
 use bytemuck::{Pod, Zeroable};
 use core::ops::Range;
@@ -241,9 +240,7 @@ impl Plugin for UiRenderPlugin {
             .add_systems(
                 ExtractSchedule,
                 (
-                    extract_ui_camera_view
-                        .in_set(RenderUiSystems::ExtractCameraViews)
-                        .after(bevy_render::camera::extract_cameras),
+                    extract_ui_camera_view.in_set(RenderUiSystems::ExtractCameraViews),
                     extract_uinode_background_colors.in_set(RenderUiSystems::ExtractBackgrounds),
                     extract_uinode_images.in_set(RenderUiSystems::ExtractImages),
                     extract_uinode_borders.in_set(RenderUiSystems::ExtractBorders),
@@ -758,7 +755,6 @@ pub fn extract_ui_camera_view(
                 Entity,
                 RenderEntity,
                 &Camera,
-                &RenderTarget,
                 Has<Hdr>,
                 Option<&UiAntiAlias>,
                 Option<&BoxShadowSamples>,
@@ -766,17 +762,11 @@ pub fn extract_ui_camera_view(
             Or<(With<Camera2d>, With<Camera3d>)>,
         >,
     >,
-    primary_window: Extract<Query<Entity, With<PrimaryWindow>>>,
-    windows: Extract<Query<&Window>>,
     mut live_entities: Local<HashSet<RetainedViewEntity>>,
 ) {
     live_entities.clear();
 
-    let primary_window = primary_window.iter().next();
-
-    for (main_entity, render_entity, camera, render_target, hdr, ui_anti_alias, shadow_samples) in
-        &query
-    {
+    for (main_entity, render_entity, camera, hdr, ui_anti_alias, shadow_samples) in &query {
         // ignore inactive cameras
         if !camera.is_active {
             commands
@@ -785,20 +775,6 @@ pub fn extract_ui_camera_view(
                 .remove::<(UiCameraView, UiAntiAlias, BoxShadowSamples)>();
             continue;
         }
-
-        let hdr_output = match render_target {
-            RenderTarget::Window(window_ref) => {
-                if let Some(window) = window_ref.normalize(primary_window) {
-                    windows
-                        .get(window.entity())
-                        .map(|w| w.hdr_output)
-                        .unwrap_or(false)
-                } else {
-                    false
-                }
-            }
-            _ => false,
-        };
 
         if let Some(physical_viewport_rect) = camera.physical_viewport_rect() {
             // use a projection matrix with the origin in the top left instead of the bottom left that comes with OrthographicProjection
@@ -827,7 +803,6 @@ pub fn extract_ui_camera_view(
                         ),
                         clip_from_world: None,
                         hdr,
-                        hdr_output,
                         viewport: UVec4::from((
                             physical_viewport_rect.min,
                             physical_viewport_rect.size(),
@@ -1443,7 +1418,6 @@ pub fn queue_uinodes(
             &ui_pipeline,
             UiPipelineKey {
                 hdr: view.hdr,
-                hdr_output: view.hdr_output,
                 anti_alias: matches!(ui_anti_alias, None | Some(UiAntiAlias::On)),
             },
         );

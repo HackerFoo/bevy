@@ -139,7 +139,6 @@ pub struct UiGradientPipelineKey {
     anti_alias: bool,
     color_space: InterpolationColorSpace,
     pub hdr: bool,
-    pub hdr_output: bool,
 }
 
 impl SpecializedRenderPipeline for GradientPipeline {
@@ -614,7 +613,6 @@ pub fn queue_gradient(
                 anti_alias: matches!(ui_anti_alias, None | Some(UiAntiAlias::On)),
                 color_space: gradient.color_space,
                 hdr: view.hdr,
-                hdr_output: view.hdr_output,
             },
         );
 

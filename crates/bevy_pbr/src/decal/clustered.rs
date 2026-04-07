@@ -162,11 +162,11 @@ impl Plugin for ClusteredDecalPlugin {
                 prepare_decals
                     .in_set(RenderSystems::ManageViews)
                     .after(prepare_lights),
+            )
+            .add_systems(
+                Render,
+                upload_decals.in_set(RenderSystems::PrepareResources),
             );
-            // .add_systems(
-            //     Render,
-            //     upload_decals.in_set(RenderSystems::PrepareResources),
-            // );
     }
 }
 
@@ -496,7 +496,6 @@ impl RenderClusteredDecals {
 
 /// Uploads the list of decals from [`RenderClusteredDecals::decals`] to the
 /// GPU.
-#[allow(dead_code)]
 fn upload_decals(
     render_decals: Res<RenderClusteredDecals>,
     mut decals_buffer: ResMut<DecalsBuffer>,

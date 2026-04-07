@@ -8,7 +8,7 @@ use bevy_ecs::prelude::*;
 use bevy_image::Image;
 use bevy_math::{Affine3A, Dir3, Mat3, Mat4, Vec3};
 use bevy_reflect::prelude::*;
-use bevy_transform::components::GlobalTransform;
+use bevy_transform::components::{GlobalTransform, Transform};
 
 use crate::cluster::{ClusterVisibilityClass, GlobalVisibleClusterableObjects};
 
@@ -21,7 +21,7 @@ use crate::cluster::{ClusterVisibilityClass, GlobalVisibleClusterableObjects};
 /// To control the resolution of the shadow maps, use the [`DirectionalLightShadowMap`](`crate::DirectionalLightShadowMap`)  resource.
 #[derive(Component, Debug, Clone, Copy, Reflect)]
 #[reflect(Component, Default, Debug, Clone)]
-#[require(Frustum, VisibleMeshEntities, Visibility, VisibilityClass)]
+#[require(Frustum, VisibleMeshEntities, Transform, Visibility, VisibilityClass)]
 #[component(on_add = visibility::add_visibility_class::<ClusterVisibilityClass>)]
 pub struct SpotLight {
     /// The color of the light.

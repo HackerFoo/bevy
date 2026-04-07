@@ -138,7 +138,6 @@ pub fn init_ui_texture_slice_pipeline(mut commands: Commands, asset_server: Res<
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct UiTextureSlicePipelineKey {
     pub hdr: bool,
-    pub hdr_output: bool,
 }
 
 impl SpecializedRenderPipeline for UiTextureSlicePipeline {
@@ -337,10 +336,7 @@ pub fn queue_ui_slices(
         let pipeline = pipelines.specialize(
             &pipeline_cache,
             &ui_slicer_pipeline,
-            UiTextureSlicePipelineKey {
-                hdr: view.hdr,
-                hdr_output: view.hdr_output,
-            },
+            UiTextureSlicePipelineKey { hdr: view.hdr },
         );
 
         transparent_phase.add(TransparentUi {

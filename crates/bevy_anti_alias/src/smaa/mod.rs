@@ -173,7 +173,9 @@ struct SmaaNeighborhoodBlendingPipeline {
 /// A unique identifier for a set of SMAA pipelines.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct SmaaNeighborhoodBlendingPipelineKey {
-    hdr: bool,
+    /// The format of the framebuffer.
+    texture_format: TextureFormat,
+    /// The quality preset.
     preset: SmaaPreset,
 }
 
@@ -576,11 +578,7 @@ impl SpecializedRenderPipeline for SmaaNeighborhoodBlendingPipeline {
                 shader_defs,
                 entry_point: Some("neighborhood_blending_fragment_main".into()),
                 targets: vec![Some(ColorTargetState {
-                    format: if key.hdr {
-                        ViewTarget::TEXTURE_FORMAT_HDR
-                    } else {
-                        TextureFormat::bevy_default()
-                    },
+                    format: key.texture_format,
                     blend: None,
                     write_mask: ColorWrites::ALL,
                 })],
@@ -620,7 +618,11 @@ fn prepare_smaa_pipelines(
                 &pipeline_cache,
                 &smaa_pipelines.neighborhood_blending,
                 SmaaNeighborhoodBlendingPipelineKey {
-                    hdr: view.hdr,
+                    texture_format: if view.hdr {
+                        ViewTarget::TEXTURE_FORMAT_HDR
+                    } else {
+                        TextureFormat::bevy_default()
+                    },
                     preset: smaa.preset,
                 },
             );

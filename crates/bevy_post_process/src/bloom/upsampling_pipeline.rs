@@ -9,13 +9,12 @@ use bevy_ecs::{
     resource::Resource,
     system::{Commands, Query, Res, ResMut},
 };
-use bevy_image::BevyDefault;
 use bevy_render::{
     render_resource::{
         binding_types::{sampler, texture_2d, uniform_buffer},
         *,
     },
-    view::{ExtractedView, ViewTarget},
+    view::ViewTarget,
 };
 use bevy_shader::Shader;
 use bevy_utils::default;
@@ -39,8 +38,6 @@ pub struct BloomUpsamplingPipeline {
 pub struct BloomUpsamplingPipelineKeys {
     composite_mode: BloomCompositeMode,
     final_pipeline: bool,
-    hdr: bool,
-    hdr_output: bool,
 }
 
 pub fn init_bloom_upscaling_pipeline(
@@ -75,19 +72,10 @@ impl SpecializedRenderPipeline for BloomUpsamplingPipeline {
 
     fn specialize(&self, key: Self::Key) -> RenderPipelineDescriptor {
         let texture_format = if key.final_pipeline {
-            if key.hdr {
-                ViewTarget::TEXTURE_FORMAT_HDR
-            } else {
-                TextureFormat::bevy_default()
-            }
+            ViewTarget::TEXTURE_FORMAT_HDR
         } else {
             BLOOM_TEXTURE_FORMAT
         };
-
-        let mut shader_defs: Vec<bevy_shader::ShaderDefVal> = Vec::new();
-        if key.final_pipeline && key.hdr_output {
-            shader_defs.push("HDR_OUTPUT".into());
-        }
 
         let color_blend = match key.composite_mode {
             BloomCompositeMode::EnergyConserving => {
@@ -152,17 +140,15 @@ pub fn prepare_upsampling_pipeline(
     pipeline_cache: Res<PipelineCache>,
     mut pipelines: ResMut<SpecializedRenderPipelines<BloomUpsamplingPipeline>>,
     pipeline: Res<BloomUpsamplingPipeline>,
-    views: Query<(Entity, &Bloom, &ExtractedView)>,
+    views: Query<(Entity, &Bloom)>,
 ) {
-    for (entity, bloom, view) in &views {
+    for (entity, bloom) in &views {
         let pipeline_id = pipelines.specialize(
             &pipeline_cache,
             &pipeline,
             BloomUpsamplingPipelineKeys {
                 composite_mode: bloom.composite_mode,
                 final_pipeline: false,
-                hdr: view.hdr,
-                hdr_output: view.hdr_output,
             },
         );
 
@@ -172,8 +158,6 @@ pub fn prepare_upsampling_pipeline(
             BloomUpsamplingPipelineKeys {
                 composite_mode: bloom.composite_mode,
                 final_pipeline: true,
-                hdr: view.hdr,
-                hdr_output: view.hdr_output,
             },
         );
 

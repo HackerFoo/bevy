@@ -64,8 +64,6 @@ pub enum ExecutorKind {
     #[cfg(feature = "std")]
     #[cfg_attr(all(not(target_arch = "wasm32"), feature = "multi_threaded"), default)]
     MultiThreaded,
-    /// Runs the schedule in the thread from which it is called.
-    MultiThreadedUsingCallingThread,
 }
 
 /// Holds systems and conditions of a [`Schedule`](super::Schedule) sorted in topological order

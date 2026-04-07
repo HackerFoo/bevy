@@ -39,7 +39,7 @@ use bevy_render::{
         TextureSampleType,
     },
     renderer::{RenderContext, RenderDevice},
-    view::{ViewTarget, ViewUniform, ViewUniformOffset, ViewUniforms},
+    view::ViewTarget,
     ExtractSchedule, MainWorld, RenderApp, RenderStartup,
 };
 use bevy_shader::ShaderRef;
@@ -208,8 +208,6 @@ fn init_pipeline<T: FullscreenMaterial>(
         &BindGroupLayoutEntries::sequential(
             ShaderStages::FRAGMENT,
             (
-                // The View uniform
-                uniform_buffer::<ViewUniform>(true),
                 // The screen texture
                 texture_2d(TextureSampleType::Float { filterable: true }),
                 // The sampler that will be used to sample the screen texture
@@ -270,17 +268,13 @@ struct FullscreenMaterialNode<T: FullscreenMaterial> {
 
 impl<T: FullscreenMaterial> ViewNode for FullscreenMaterialNode<T> {
     // TODO we should expose the depth buffer and the gbuffer if using deferred
-    type ViewQuery = (
-        &'static ViewTarget,
-        &'static DynamicUniformIndex<T>,
-        &'static ViewUniformOffset,
-    );
+    type ViewQuery = (&'static ViewTarget, &'static DynamicUniformIndex<T>);
 
     fn run<'w>(
         &self,
         _graph: &mut RenderGraphContext,
         render_context: &mut RenderContext,
-        (view_target, settings_index, view_uniform_offset): QueryItem<Self::ViewQuery>,
+        (view_target, settings_index): QueryItem<Self::ViewQuery>,
         world: &World,
     ) -> Result<(), NodeRunError> {
         let fullscreen_pipeline = world.resource::<FullscreenMaterialPipeline>();
@@ -296,11 +290,6 @@ impl<T: FullscreenMaterial> ViewNode for FullscreenMaterialNode<T> {
             return Ok(());
         };
 
-        let view_uniforms = world.resource::<ViewUniforms>();
-        let Some(view_binding) = view_uniforms.uniforms.binding() else {
-            return Ok(());
-        };
-
         let data_uniforms = world.resource::<ComponentUniforms<T>>();
         let Some(settings_binding) = data_uniforms.uniforms().binding() else {
             return Ok(());
@@ -312,7 +301,6 @@ impl<T: FullscreenMaterial> ViewNode for FullscreenMaterialNode<T> {
             "post_process_bind_group",
             &pipeline_cache.get_bind_group_layout(&fullscreen_pipeline.layout),
             &BindGroupEntries::sequential((
-                view_binding.clone(),
                 post_process.source,
                 &fullscreen_pipeline.sampler,
                 settings_binding.clone(),
@@ -333,11 +321,7 @@ impl<T: FullscreenMaterial> ViewNode for FullscreenMaterialNode<T> {
         });
 
         render_pass.set_render_pipeline(pipeline);
-        render_pass.set_bind_group(
-            0,
-            &bind_group,
-            &[view_uniform_offset.offset, settings_index.index()],
-        );
+        render_pass.set_bind_group(0, &bind_group, &[settings_index.index()]);
         render_pass.draw(0..3, 0..1);
 
         Ok(())

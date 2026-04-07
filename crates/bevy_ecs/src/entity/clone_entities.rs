@@ -1,3 +1,8 @@
+#![expect(
+    unsafe_op_in_unsafe_fn,
+    reason = "See #11590. To be removed once all applicable unsafe code has an unsafe block with a safety comment."
+)]
+
 use crate::{
     archetype::Archetype,
     bundle::{Bundle, BundleRemover, InsertMode},
@@ -646,7 +651,7 @@ impl EntityCloner {
                         target,
                         &bundle_scratch_allocator,
                         &mut bundle_scratch,
-                        world.entities_allocator(),
+                        world.entity_allocator(),
                         info,
                         state,
                         mapper,

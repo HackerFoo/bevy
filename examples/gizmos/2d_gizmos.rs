@@ -151,12 +151,31 @@ fn update_config(
             _ => GizmoLineStyle::Solid,
         };
     }
+    if keyboard.just_pressed(KeyCode::KeyI) {
+        config.line.style = match config.line.style {
+            GizmoLineStyle::Solid => GizmoLineStyle::Dashed {
+                gap_scale: 3.0,
+                line_scale: 5.0,
+            },
+            GizmoLineStyle::Dotted => GizmoLineStyle::Solid,
+            _ => GizmoLineStyle::Dotted,
+        };
+    }
     if keyboard.just_pressed(KeyCode::KeyJ) {
         config.line.joints = match config.line.joints {
             GizmoLineJoint::Bevel => GizmoLineJoint::Miter,
             GizmoLineJoint::Miter => GizmoLineJoint::Round(4),
             GizmoLineJoint::Round(_) => GizmoLineJoint::None,
             GizmoLineJoint::None => GizmoLineJoint::Bevel,
+        };
+    }
+
+    if keyboard.just_pressed(KeyCode::KeyK) {
+        config.line.joints = match config.line.joints {
+            GizmoLineJoint::Bevel => GizmoLineJoint::None,
+            GizmoLineJoint::Miter => GizmoLineJoint::Bevel,
+            GizmoLineJoint::Round(_) => GizmoLineJoint::Miter,
+            GizmoLineJoint::None => GizmoLineJoint::Round(4),
         };
     }
 
@@ -191,10 +210,6 @@ fn update_config(
         };
     }
     if keyboard.just_pressed(KeyCode::Space) {
-        if virtual_time.is_paused() {
-            virtual_time.unpause();
-        } else {
-            virtual_time.pause();
-        }
+        virtual_time.toggle();
     }
 }

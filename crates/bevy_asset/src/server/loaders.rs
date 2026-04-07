@@ -5,20 +5,11 @@ use crate::{
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use async_broadcast::RecvError;
 use bevy_platform::collections::HashMap;
-#[cfg(feature = "trace")]
-use bevy_reflect::TypePath;
 use bevy_tasks::IoTaskPool;
 use bevy_utils::TypeIdMap;
 use core::any::TypeId;
 use thiserror::Error;
 use tracing::warn;
-
-#[cfg(feature = "trace")]
-use {
-    alloc::string::ToString,
-    bevy_tasks::ConditionalSendFuture,
-    tracing::{info_span, instrument::Instrument},
-};
 
 #[derive(Default)]
 pub(crate) struct AssetLoaders {
@@ -42,8 +33,6 @@ impl AssetLoaders {
         let loader_asset_type = TypeId::of::<L::Asset>();
         let loader_asset_type_name = core::any::type_name::<L::Asset>();
 
-        #[cfg(feature = "trace")]
-        let loader = InstrumentedAssetLoader(loader);
         let loader = Arc::new(loader);
 
         let (loader_index, is_new) =
@@ -227,12 +216,12 @@ impl AssetLoaders {
 
         // Try extracting the extension from the path
         if let Some(full_extension) = asset_path.and_then(AssetPath::get_full_extension) {
-            if let Some(&index) = try_extension(full_extension.as_str()) {
+            if let Some(&index) = try_extension(full_extension) {
                 return self.get_by_index(index);
             }
 
             // Try secondary extensions from the path
-            for extension in AssetPath::iter_secondary_extensions(&full_extension) {
+            for extension in AssetPath::iter_secondary_extensions(full_extension) {
                 if let Some(&index) = try_extension(extension) {
                     return self.get_by_index(index);
                 }
@@ -280,8 +269,8 @@ impl AssetLoaders {
     pub(crate) fn get_by_path(&self, path: &AssetPath<'_>) -> Option<MaybeAssetLoader> {
         let extension = path.get_full_extension()?;
 
-        let result = core::iter::once(extension.as_str())
-            .chain(AssetPath::iter_secondary_extensions(&extension))
+        let result = core::iter::once(extension)
+            .chain(AssetPath::iter_secondary_extensions(extension))
             .filter_map(|extension| self.extension_to_loaders.get(extension)?.last().copied())
             .find_map(|index| self.get_by_index(index))?;
 
@@ -310,35 +299,6 @@ impl MaybeAssetLoader {
             MaybeAssetLoader::Ready(loader) => Ok(loader),
             MaybeAssetLoader::Pending { mut receiver, .. } => Ok(receiver.recv().await?),
         }
-    }
-}
-
-#[cfg(feature = "trace")]
-#[derive(TypePath)]
-struct InstrumentedAssetLoader<T>(T);
-
-#[cfg(feature = "trace")]
-impl<T: AssetLoader> AssetLoader for InstrumentedAssetLoader<T> {
-    type Asset = T::Asset;
-    type Settings = T::Settings;
-    type Error = T::Error;
-
-    fn load(
-        &self,
-        reader: &mut dyn crate::io::Reader,
-        settings: &Self::Settings,
-        load_context: &mut crate::LoadContext,
-    ) -> impl ConditionalSendFuture<Output = Result<Self::Asset, Self::Error>> {
-        let span = info_span!(
-            "asset loading",
-            loader = T::type_path(),
-            asset = load_context.path().to_string(),
-        );
-        self.0.load(reader, settings, load_context).instrument(span)
-    }
-
-    fn extensions(&self) -> &[&str] {
-        self.0.extensions()
     }
 }
 

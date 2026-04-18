@@ -28,12 +28,23 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, MyExtension>>>,
 ) {
+    // circular base
+    commands.spawn((
+        Mesh3d(meshes.add(Circle::new(4.0))),
+        MeshMaterial3d(materials.add(ExtendedMaterial {
+            base: Color::WHITE.into(),
+            extension: MyExtension::new(1),
+        })),
+        Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
+    ));
+
     // sphere
     commands.spawn((
-        Mesh3d(meshes.add(Sphere::new(1.0))),
+        Mesh3d(meshes.add(Sphere::new(0.5))),
         MeshMaterial3d(materials.add(ExtendedMaterial {
             base: StandardMaterial {
                 base_color: RED.into(),
+                alpha_mode: AlphaMode::Blend,
                 // can be used in forward or deferred mode
                 opaque_render_method: OpaqueRendererMethod::Auto,
                 // in deferred mode, only the PbrInput can be modified (uvs, color and other material properties),
@@ -50,7 +61,10 @@ fn setup(
 
     // light
     commands.spawn((
-        DirectionalLight::default(),
+        DirectionalLight {
+            shadow_maps_enabled: true,
+            ..default()
+        },
         Transform::from_xyz(1.0, 1.0, 1.0).looking_at(Vec3::ZERO, Vec3::Y),
         Rotate,
     ));
@@ -103,6 +117,10 @@ impl MaterialExtension for MyExtension {
     }
 
     fn deferred_fragment_shader() -> ShaderRef {
+        SHADER_ASSET_PATH.into()
+    }
+
+    fn prepass_fragment_shader() -> ShaderRef {
         SHADER_ASSET_PATH.into()
     }
 }

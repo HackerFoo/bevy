@@ -1,6 +1,6 @@
 [package]
 name = "bevy_city"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2024"
 publish = false
 license = "MIT OR Apache-2.0"
@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 bevy = { path = "../../../", features = [
   "https",
   "free_camera",
-  "experimental_bevy_feathers",
+  "bevy_feathers",
   "web_asset_cache",
 ] }
 

@@ -354,16 +354,12 @@ pub mod tests {
         let mut label_to_build_metadata = HashMap::new();
 
         for label in interned_labels {
-            let mut schedule = app
+            let build_metadata = app
                 .world_mut()
-                .resource_mut::<Schedules>()
-                .remove(label)
-                .expect("we just copied the label from this schedule");
-
-            let build_metadata = schedule.initialize(app.world_mut()).unwrap().unwrap();
+                .schedule_scope(label, |world, schedule| schedule.initialize(world))
+                .unwrap()
+                .unwrap();
             label_to_build_metadata.insert(label, build_metadata);
-
-            app.world_mut().resource_mut::<Schedules>().insert(schedule);
         }
 
         let mut app_data = AppData::from_schedules(
@@ -550,6 +546,28 @@ pub mod tests {
         }
     }
 
+    /// Convenience to check the structure of the first schedule in an [`App`], which should always
+    /// be [`First`] containing [`message_update_system`].
+    pub fn validate_message_update_system(schedule: &ScheduleData) {
+        assert_eq!(schedule.name, "First");
+        assert_eq!(
+            schedule.systems,
+            [SystemData {
+                name: "message_update_system".into(),
+                apply_deferred: false,
+                exclusive: true,
+                deferred: false,
+            }]
+        );
+        assert_eq!(
+            schedule.system_sets,
+            [
+                simple_system_set("MessageUpdateSystems"),
+                simple_system_set("SystemTypeSet:message_update_system"),
+            ]
+        );
+    }
+
     /// A convenience system set that is generic allowing us to make many of these quickly.
     #[derive(SystemSet, Hash, PartialEq, Eq, Clone)]
     struct MySet<const NUM: u32>;
@@ -575,16 +593,19 @@ pub mod tests {
         app.add_systems(Update, (a, b, c).chain());
 
         let data = app_data_from_app(&mut app).unwrap();
-        assert_eq!(data.schedules.len(), 1);
-        let schedule = &data.schedules[0];
-        assert_eq!(schedule.name, "Update");
+        // SubApps start with the First schedule by default.
+        assert_eq!(data.schedules.len(), 2);
+        validate_message_update_system(&data.schedules[0]);
+
+        let update = &data.schedules[1];
+        assert_eq!(update.name, "Update");
         assert_eq!(
-            schedule.systems,
+            update.systems,
             [simple_system("a"), simple_system("b"), simple_system("c"),]
         );
         // Each system is also a system set.
         assert_eq!(
-            schedule.system_sets,
+            update.system_sets,
             [
                 simple_system_set("SystemTypeSet:a"),
                 simple_system_set("SystemTypeSet:b"),
@@ -593,7 +614,7 @@ pub mod tests {
         );
         // Every system is in its own system set.
         assert_eq!(
-            schedule.hierarchy,
+            update.hierarchy,
             [
                 (SystemSetIndex(0), ScheduleIndex::System(0)),
                 (SystemSetIndex(1), ScheduleIndex::System(1)),
@@ -602,14 +623,14 @@ pub mod tests {
         );
         // There are 2 dependency edges to connect a-b and b-c.
         assert_eq!(
-            schedule.dependency,
+            update.dependency,
             [
                 (ScheduleIndex::System(0), ScheduleIndex::System(1)),
                 (ScheduleIndex::System(1), ScheduleIndex::System(2)),
             ]
         );
-        assert_eq!(schedule.components.len(), 0);
-        assert_eq!(schedule.conflicts.len(), 0);
+        assert_eq!(update.components.len(), 0);
+        assert_eq!(update.conflicts.len(), 0);
     }
 
     #[test]
@@ -619,29 +640,31 @@ pub mod tests {
         app.configure_sets(Update, (MySet::<0>, MySet::<1>, MySet::<2>).chain());
 
         let data = app_data_from_app(&mut app).unwrap();
-        assert_eq!(data.schedules.len(), 1);
-        let schedule = &data.schedules[0];
-        assert_eq!(schedule.name, "Update");
-        assert_eq!(schedule.systems, []);
+        // SubApps start with the First schedule by default.
+        assert_eq!(data.schedules.len(), 2);
+        validate_message_update_system(&data.schedules[0]);
+        let update = &data.schedules[1];
+        assert_eq!(update.name, "Update");
+        assert_eq!(update.systems, []);
         assert_eq!(
-            schedule.system_sets,
+            update.system_sets,
             [
                 simple_system_set("MySet<0>"),
                 simple_system_set("MySet<1>"),
                 simple_system_set("MySet<2>"),
             ]
         );
-        assert_eq!(schedule.hierarchy, []);
+        assert_eq!(update.hierarchy, []);
         // There are 2 dependency edges to connect 0-1 and 1-2.
         assert_eq!(
-            schedule.dependency,
+            update.dependency,
             [
                 (ScheduleIndex::SystemSet(0), ScheduleIndex::SystemSet(1)),
                 (ScheduleIndex::SystemSet(1), ScheduleIndex::SystemSet(2)),
             ]
         );
-        assert_eq!(schedule.components.len(), 0);
-        assert_eq!(schedule.conflicts.len(), 0);
+        assert_eq!(update.components.len(), 0);
+        assert_eq!(update.conflicts.len(), 0);
     }
 
     #[test]
@@ -655,12 +678,14 @@ pub mod tests {
             .configure_sets(Update, MySet::<1>.in_set(MySet::<2>));
 
         let data = app_data_from_app(&mut app).unwrap();
-        assert_eq!(data.schedules.len(), 1);
-        let schedule = &data.schedules[0];
-        assert_eq!(schedule.name, "Update");
-        assert_eq!(schedule.systems, [simple_system("a")]);
+        // SubApps start with the First schedule by default.
+        assert_eq!(data.schedules.len(), 2);
+        validate_message_update_system(&data.schedules[0]);
+        let update = &data.schedules[1];
+        assert_eq!(update.name, "Update");
+        assert_eq!(update.systems, [simple_system("a")]);
         assert_eq!(
-            schedule.system_sets,
+            update.system_sets,
             [
                 simple_system_set("MySet<0>"),
                 simple_system_set("MySet<1>"),
@@ -669,7 +694,7 @@ pub mod tests {
             ]
         );
         assert_eq!(
-            schedule.hierarchy,
+            update.hierarchy,
             [
                 (SystemSetIndex(0), ScheduleIndex::System(0)),
                 (SystemSetIndex(1), ScheduleIndex::SystemSet(0)),
@@ -677,9 +702,9 @@ pub mod tests {
                 (SystemSetIndex(3), ScheduleIndex::System(0)),
             ]
         );
-        assert_eq!(schedule.dependency, []);
-        assert_eq!(schedule.components.len(), 0);
-        assert_eq!(schedule.conflicts.len(), 0);
+        assert_eq!(update.dependency, []);
+        assert_eq!(update.components.len(), 0);
+        assert_eq!(update.conflicts.len(), 0);
     }
 
     #[test]
@@ -697,11 +722,13 @@ pub mod tests {
         app.add_systems(Update, (((a0, a1), (b0, b1)).chain(), (c0, c1).chain()));
 
         let data = app_data_from_app(&mut app).unwrap();
-        assert_eq!(data.schedules.len(), 1);
-        let schedule = &data.schedules[0];
-        assert_eq!(schedule.name, "Update");
+        // SubApps start with the First schedule by default.
+        assert_eq!(data.schedules.len(), 2);
+        validate_message_update_system(&data.schedules[0]);
+        let update = &data.schedules[1];
+        assert_eq!(update.name, "Update");
         assert_eq!(
-            schedule.systems,
+            update.systems,
             [
                 SystemData {
                     name: "a0".into(),
@@ -728,7 +755,7 @@ pub mod tests {
             ]
         );
         assert_eq!(
-            schedule.system_sets,
+            update.system_sets,
             [
                 simple_system_set("SystemTypeSet:a0"),
                 simple_system_set("SystemTypeSet:a1"),
@@ -739,7 +766,7 @@ pub mod tests {
             ]
         );
         assert_eq!(
-            schedule.hierarchy,
+            update.hierarchy,
             [
                 (SystemSetIndex(0), ScheduleIndex::System(0)),
                 (SystemSetIndex(1), ScheduleIndex::System(1)),
@@ -750,7 +777,7 @@ pub mod tests {
             ]
         );
         assert_eq!(
-            schedule.dependency,
+            update.dependency,
             [
                 // a->sync and a->b
                 (ScheduleIndex::System(0), ScheduleIndex::System(2)),
@@ -766,8 +793,8 @@ pub mod tests {
                 (ScheduleIndex::System(5), ScheduleIndex::System(6)),
             ]
         );
-        assert_eq!(schedule.components.len(), 0);
-        assert_eq!(schedule.conflicts.len(), 0);
+        assert_eq!(update.components.len(), 0);
+        assert_eq!(update.conflicts.len(), 0);
     }
 
     #[test]
@@ -813,11 +840,13 @@ pub mod tests {
         app.add_systems(Update, (a0, a1, b0, b1, c0, c1, d0, d1, (e0, e1).chain()));
 
         let data = app_data_from_app(&mut app).unwrap();
-        assert_eq!(data.schedules.len(), 1);
-        let schedule = &data.schedules[0];
-        assert_eq!(schedule.name, "Update");
+        // SubApps start with the First schedule by default.
+        assert_eq!(data.schedules.len(), 2);
+        validate_message_update_system(&data.schedules[0]);
+        let update = &data.schedules[1];
+        assert_eq!(update.name, "Update");
         assert_eq!(
-            schedule.systems,
+            update.systems,
             [
                 simple_system("a0"),
                 simple_system("a1"),
@@ -832,7 +861,7 @@ pub mod tests {
             ]
         );
         assert_eq!(
-            schedule.system_sets,
+            update.system_sets,
             [
                 simple_system_set("SystemTypeSet:a0"),
                 simple_system_set("SystemTypeSet:a1"),
@@ -847,7 +876,7 @@ pub mod tests {
             ]
         );
         assert_eq!(
-            schedule.hierarchy,
+            update.hierarchy,
             [
                 (SystemSetIndex(0), ScheduleIndex::System(0)),
                 (SystemSetIndex(1), ScheduleIndex::System(1)),
@@ -862,14 +891,14 @@ pub mod tests {
             ]
         );
         assert_eq!(
-            schedule.dependency,
+            update.dependency,
             [
                 // e0 -> e1
                 (ScheduleIndex::System(8), ScheduleIndex::System(9)),
             ]
         );
         assert_eq!(
-            schedule.components,
+            update.components,
             [
                 simple_component("MyComponent<1>"),
                 simple_component("MyComponent<2>"),
@@ -877,7 +906,7 @@ pub mod tests {
             ]
         );
         assert_eq!(
-            schedule.conflicts,
+            update.conflicts,
             [
                 conflict(2, 3, AccessConflict::Components(vec![0])),
                 conflict(4, 5, AccessConflict::Components(vec![1, 2]))

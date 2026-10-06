@@ -27,7 +27,8 @@
 //! - [`Remove`]: Triggered when a component is removed from an entity and not replaced, before the component is removed.
 //! - [`Despawn`]: Triggered for each component on an entity when it is despawned.
 //!
-//! [`Discard`] hooks are evaluated before [`Remove`], then finally [`Despawn`] hooks are evaluated.
+//! [`Discard`] hooks are evaluated before [`Remove`] hooks. When an entity is despawned,
+//! [`Despawn`] hooks are evaluated first, followed by [`Discard`] and then [`Remove`] hooks.
 //!
 //! [`Add`] and [`Remove`] are counterparts: they are only triggered when a component is added or removed
 //! from an entity in such a way as to cause a change in the component's presence on that entity.
@@ -112,13 +113,13 @@ pub struct HookContext {
 ///
 /// ```
 /// use bevy_ecs::prelude::*;
-/// use bevy_platform::collections::HashSet;
+/// use bevy_ecs::entity::EntityHashSet;
 ///
 /// #[derive(Component)]
 /// struct MyTrackedComponent;
 ///
 /// #[derive(Resource, Default)]
-/// struct TrackedEntities(HashSet<Entity>);
+/// struct TrackedEntities(EntityHashSet);
 ///
 /// let mut world = World::new();
 /// world.init_resource::<TrackedEntities>();

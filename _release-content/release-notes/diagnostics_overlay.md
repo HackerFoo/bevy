@@ -4,34 +4,36 @@ authors: ["@hukasu"]
 pull_requests: [22486]
 ---
 
-You can now visualize values from the `DiagnosticStore` using a `DiagnosticsOverlay` window.
+*TODO: Add a screenshot of the DiagnosticsOverlay in a real app.*
 
-An overlay can be built by spawning an entity with the [`DiagnosticsOverlay`] component
-passing your custom [`DiagnosticPath`] list or using one of the provided presets.
+Bevy's diagnostics have always been easy to dump to the terminal, but displaying them in-game meant wiring up your own UI.
+[`DiagnosticsOverlayPlugin`] adds a built-in overlay for this with presets for common cases:
 
 ```rust
-commands.spawn(DiagnosticsOverlay::new("MyDiagnostics", vec![MyDiagnostics::COUNTER.into()]));
 commands.spawn(DiagnosticsOverlay::fps());
 commands.spawn(DiagnosticsOverlay::mesh_and_standard_materials());
 ```
 
-By default the overlay will display the smoothed moving average for the diagnostic, but
-you can also visualize the latest value or the moving average by passing
-[`DiagnosticsOverlayStatistic`]. The floating point precision can also be configured
-through the [`DiagnosticsOverlayItem::precision`] field.
+You can also build a custom overlay from any [`DiagnosticPath`] list:
+
+```rust
+commands.spawn(DiagnosticsOverlay::new("MyDiagnostics", vec![MyDiagnostics::COUNTER.into()]));
+```
+
+By default, the overlay shows a smoothed moving average. You can show the latest value or the raw moving average instead using [`DiagnosticsOverlayItem::statistic`] and configure floating-point precision with [`DiagnosticsOverlayItem::precision`]:
 
 ```rust
 commands.spawn(DiagnosticsOverlay::new("MyDiagnostics", vec![DiagnosticsOverlayItem {
     path: MyDiagnostics::COUNTER,
     statistic: DiagnosticsOverlayStatistic::Value,
-    precisiom: 4,
+    precision: 4,
 }]));
 ```
 
-All [`DiagnosticsOverlay`] will be managed by the [`DiagnosticsOverlayPlugin`], this includes
-having them being added as a child of [`DiagnosticsOverlayPlane`]. The plane will be initially
-spawned on the [`GlobalZIndex`] defined by [`INITIAL_DIAGNOSTICS_OVERLAY_Z_INDEX`]. You can order
-the Uis relative to it, or edit the [`GlobalZIndex`] of the plane.
+Check out the updated [`scene_viewer` example] to see it in action!
 
-The contents of the [`DiagnosticsOverlay`] entity are rebuilt every second. The system that rebuilds
-the contents of the overlays is defined on the [`DiagnosticsOverlaySystems::Rebuild`] system set.
+![diagnostics overlay in the scene viewer tool example](diagnostics_overlay.jpg)
+
+[`DiagnosticsOverlayPlugin`]: https://docs.rs/bevy/0.19.0/bevy/dev_tools/diagnostics_overlay/struct.DiagnosticsOverlayPlugin.html
+[`DiagnosticsOverlayItem::statistic`]: https://docs.rs/bevy/0.19.0/bevy/dev_tools/diagnostics_overlay/struct.DiagnosticsOverlayItem.html#method.statistic
+[`DiagnosticsOverlayItem::precision`]: https://docs.rs/bevy/0.19.0/bevy/dev_tools/diagnostics_overlay/struct.DiagnosticsOverlayItem.html#method.precision

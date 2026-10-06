@@ -579,6 +579,7 @@ pub const fn tonemapping_pipeline_key(tonemapping: Tonemapping) -> Mesh2dPipelin
         }
         Tonemapping::TonyMcMapface => Mesh2dPipelineKey::TONEMAP_METHOD_TONY_MC_MAPFACE,
         Tonemapping::BlenderFilmic => Mesh2dPipelineKey::TONEMAP_METHOD_BLENDER_FILMIC,
+        Tonemapping::KhronosPbrNeutral => Mesh2dPipelineKey::TONEMAP_METHOD_PBR_NEUTRAL,
     }
 }
 
@@ -877,10 +878,6 @@ pub fn queue_material2d_meshes<M: Material2d>(
 ) where
     M::Data: PartialEq + Eq + Hash + Clone,
 {
-    if render_material_instances.is_empty() {
-        return;
-    }
-
     for (view_entity, view, visible_entities) in &views {
         let Some(view_specialized_material_pipeline_cache) =
             specialized_material_pipeline_cache.get(view_entity)
@@ -929,6 +926,14 @@ pub fn queue_material2d_meshes<M: Material2d>(
             transparent_phase.remove(Entity::PLACEHOLDER, *main_entity);
             opaque_phase.remove(*main_entity);
             alpha_mask_phase.remove(*main_entity);
+        }
+
+        // With no entity using this material there is nothing to queue, but the
+        // dequeue above still has to run: it is the only thing that takes items
+        // of despawned entities out of the retained phases, and it has to run on
+        // the very frame the last such entity goes away.
+        if render_material_instances.is_empty() {
+            continue;
         }
 
         // Now iterate over all newly-visible entities and those that need
@@ -1036,7 +1041,7 @@ pub fn queue_material2d_meshes<M: Material2d>(
                     // entity field here entirely, but we currently can't do so
                     // because UI creates multiple render entities for each main
                     // entity in its sorted phases.
-                    transparent_phase.add(Transparent2d {
+                    transparent_phase.add_retained(Transparent2d {
                         entity: (Entity::PLACEHOLDER, *visible_entity),
                         draw_function: material_2d.properties.draw_function_id,
                         pipeline: pipeline_id,

@@ -102,7 +102,10 @@ impl Plugin for TransformGizmoRenderPlugin {
             )
                 .chain()
                 .after(bevy_transform::TransformSystems::Propagate)
-                .after(bevy_camera::visibility::VisibilitySystems::VisibilityPropagate),
+                .after(bevy_camera::visibility::VisibilitySystems::VisibilityPropagate)
+                .after(bevy_render::camera::camera_system)
+                .after(bevy_camera::visibility::check_visibility_cpu_culling)
+                .in_set(bevy_app::TransformGizmoRenderStep),
         );
     }
 }
@@ -351,10 +354,21 @@ fn spawn_gizmo_meshes(
 
 fn update_gizmo_meshes(
     focus: Option<bevy_ecs::system::Single<&GlobalTransform, With<TransformGizmoFocus>>>,
-    marked_cameras: Query<(&Camera, &GlobalTransform), With<TransformGizmoCamera>>,
+    marked_cameras: Query<
+        (&GlobalTransform, &Camera),
+        (
+            With<TransformGizmoCamera>,
+            With<Camera>,
+            Without<GizmoOverlayCamera>,
+        ),
+    >,
     all_cameras: Query<
-        (&Camera, &GlobalTransform),
-        (Without<GizmoOverlayCamera>, Without<TransformGizmoRoot>),
+        (&GlobalTransform, &Camera),
+        (
+            Without<GizmoOverlayCamera>,
+            Without<TransformGizmoRoot>,
+            With<Camera>,
+        ),
     >,
     settings: Option<Res<TransformGizmoSettings>>,
     state: Option<Res<TransformGizmoState>>,
@@ -373,7 +387,7 @@ fn update_gizmo_meshes(
     >,
     mut std_materials: ResMut<Assets<StandardMaterial>>,
     mut overlay_cam: Query<
-        &mut Transform,
+        (&mut Transform, &mut Camera),
         (
             With<GizmoOverlayCamera>,
             Without<TransformGizmoRoot>,
@@ -394,16 +408,16 @@ fn update_gizmo_meshes(
         *root_vis = Visibility::Hidden;
         return;
     };
-    let Some((_, cam_tf)): Option<(&Camera, &GlobalTransform)> =
-        bevy_gizmos::resolve_gizmo_camera!(marked_cameras, all_cameras)
+    let Some((cam_tf, cam)) = bevy_gizmos::resolve_gizmo_camera!(marked_cameras, all_cameras)
     else {
         *root_vis = Visibility::Hidden;
         return;
     };
 
     // Copy main camera transform to overlay camera
-    if let Ok(mut overlay_tf) = overlay_cam.single_mut() {
+    if let Ok((mut overlay_tf, mut overlay_cam)) = overlay_cam.single_mut() {
         *overlay_tf = cam_tf.compute_transform();
+        overlay_cam.viewport = cam.viewport.clone();
     }
 
     *root_vis = Visibility::Inherited;

@@ -87,6 +87,8 @@ const LIGHT_NOT_PRESENT_THIS_FRAME = 0xFFFFFFFFu;
 @group(0) @binding(10) var<storage> light_sources: array<LightSource>;
 @group(0) @binding(11) var<storage> directional_lights: array<DirectionalLight>;
 @group(0) @binding(12) var<storage> previous_frame_light_id_translations: array<u32>;
+@group(0) @binding(13) var brdf_dfg_lut: texture_2d<f32>;
+@group(0) @binding(14) var brdf_dfg_lut_sampler: sampler;
 
 const RAY_T_MIN = 0.001f;
 const RAY_T_MAX = 100000.0f;
@@ -213,7 +215,8 @@ fn resolve_triangle_data_full(instance_id: u32, triangle_id: u32, barycentrics: 
         let T = TBN[0];
         let B = TBN[1];
         let N = TBN[2];
-        let Nt = sample_texture(material.normal_map_texture_id, uv);
+        var Nt = sample_texture(material.normal_map_texture_id, uv) * 2.0 - 1.0;
+        Nt.z = sqrt(max(1.0 - dot(Nt.xy, Nt.xy), 0.0)); // Reconstruct Z to support two-channel normal maps
         world_normal = normalize(Nt.x * T + Nt.y * B + Nt.z * N);
     }
 

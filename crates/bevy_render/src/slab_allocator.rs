@@ -933,9 +933,6 @@ where
         render_device: &RenderDevice,
         render_queue: &RenderQueue,
     ) {
-        if len == 0 {
-            return;
-        }
         let Some(slab_id) = self.key_to_slab.get(key) else {
             error!("Use-after-free: attempted to copy element data for an unallocated key");
             return;

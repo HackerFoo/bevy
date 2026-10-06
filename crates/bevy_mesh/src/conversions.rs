@@ -92,6 +92,19 @@ impl_from_into!(UVec3, Uint32x3);
 impl_from!([u32; 4], Uint32x4);
 impl_from_into!(UVec4, Uint32x4);
 
+impl_from!([i16; 2], Sint16x2);
+impl_from!([i16; 4], Sint16x4);
+
+impl_from!([u16; 2], Uint16x2);
+impl_from!([u16; 4], Uint16x4);
+
+impl_from!([i8; 2], Sint8x2);
+impl_from!([i8; 4], Sint8x4);
+
+impl_from!([u8; 2], Uint8x2);
+impl_from!([u8; 4], Uint8x4);
+
+
 macro_rules! impl_try_from {
     ($into:ty, $($variant:tt), +) => {
         impl TryFrom<VertexAttributeValues> for Vec<$into> {

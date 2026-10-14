@@ -98,7 +98,6 @@ pub struct MultiThreadedExecutor {
     /// Cached tracing span
     #[cfg(feature = "trace")]
     executor_span: Span,
-    use_calling_thread: bool
 }
 
 /// The state of the executor while running.
@@ -144,7 +143,7 @@ struct Context<'scope, 'env, 'sys> {
 
 impl Default for MultiThreadedExecutor {
     fn default() -> Self {
-        Self::new(false)
+        Self::new()
     }
 }
 
@@ -273,7 +272,7 @@ impl SystemExecutor for MultiThreadedExecutor {
         let environment = &Environment::new(self, schedule, world);
 
         ComputeTaskPool::get_or_init(TaskPool::default).scope_with_executor(
-            self.use_calling_thread,
+            false,
             thread_executor,
             |scope| {
                 let context = Context {
@@ -385,7 +384,7 @@ impl MultiThreadedExecutor {
     /// Creates a new `multi_threaded` executor for use with a [`Schedule`].
     ///
     /// [`Schedule`]: crate::schedule::Schedule
-    pub fn new(use_calling_thread: bool) -> Self {
+    pub fn new() -> Self {
         Self {
             state: Mutex::new(ExecutorState::new()),
             system_completion: ConcurrentQueue::unbounded(),
@@ -394,7 +393,6 @@ impl MultiThreadedExecutor {
             panic_payload: Mutex::new(None),
             #[cfg(feature = "trace")]
             executor_span: info_span!("multithreaded executor"),
-            use_calling_thread
         }
     }
 }

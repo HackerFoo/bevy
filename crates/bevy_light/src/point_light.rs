@@ -40,6 +40,7 @@ use crate::{cluster::ClusterVisibilityClass, light_consts};
 #[require(
     CubemapFrusta,
     CubemapVisibleEntities,
+    Transform,
     Visibility,
     VisibilityClass
 )]

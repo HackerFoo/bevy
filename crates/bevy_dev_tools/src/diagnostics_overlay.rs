@@ -99,7 +99,7 @@ impl DiagnosticsOverlay {
         }
     }
 
-    /// Create a [`DiagnosticsOverlay`] with the diagnostcs from [`FrameTimeDiagnosticsPlugin`]
+    /// Create a [`DiagnosticsOverlay`] with the diagnostics from [`FrameTimeDiagnosticsPlugin`]
     pub fn fps() -> Self {
         Self {
             title: Cow::Owned("Fps".to_owned()),
@@ -180,7 +180,7 @@ impl Default for DiagnosticsOverlayStyle {
 ///
 /// Initially the [`DiagnosticsOverlayPlane`] will be positioned at the
 /// [`GlobalZIndex`] of [`INITIAL_DIAGNOSTICS_OVERLAY_PLANE_Z_INDEX`].
-/// You are free to edit the z index of the plane or have your ui hierarchies
+/// You are free to edit the z index of the plane or have your UI hierarchies
 /// be relative to it.
 #[derive(Component)]
 pub struct DiagnosticsOverlayPlane;
@@ -365,7 +365,7 @@ fn rebuild_diagnostics_list(
 }
 
 fn build_overlay(
-    event: On<Add, DiagnosticsOverlay>,
+    event: On<Add<DiagnosticsOverlay>>,
     mut commands: Commands,
     style: Res<DiagnosticsOverlayStyle>,
     diagnostics_overlays: Query<&DiagnosticsOverlay>,
@@ -428,7 +428,7 @@ fn build_overlay(
 }
 
 fn drag_by_header(
-    mut event: On<Pointer<Drag>>,
+    mut event: On<PointerDrag>,
     mut diagnostics_overlays: Query<&mut Node, With<DiagnosticsOverlay>>,
     diagnostics_overlay_headers: Query<&ChildOf, With<DiagnosticsOverlayHeader>>,
 ) {
@@ -455,7 +455,7 @@ fn drag_by_header(
 }
 
 fn collapse_on_click_to_header(
-    mut event: On<Pointer<Click>>,
+    mut event: On<PointerClick>,
     mut diagnostics_overlays: Query<&Children, With<DiagnosticsOverlay>>,
     mut diagnostics_overlay_contents: Query<&mut Node, With<DiagnosticsOverlayContents>>,
     diagnostics_overlay_header: Query<&ChildOf, With<DiagnosticsOverlayHeader>>,
@@ -471,7 +471,9 @@ fn collapse_on_click_to_header(
         let Ok(children) = diagnostics_overlays.get_mut(child_of.get()) else {
             unreachable!("DiagnosticsOverlay has been tempered with. Do not despawn its children.");
         };
-        let mut lists_iter = diagnostics_overlay_contents.iter_many_mut(children.collection());
+        let mut lists_iter = diagnostics_overlay_contents
+            .iter_many_mut(children.collection())
+            .matched();
 
         let Some(mut node) = lists_iter.fetch_next() else {
             panic!(
@@ -500,7 +502,7 @@ fn collapse_on_click_to_header(
 }
 
 fn bring_to_front(
-    mut event: On<Pointer<Press>>,
+    mut event: On<PointerPress>,
     mut commands: Commands,
     diagnostics_overlays: Query<(), With<DiagnosticsOverlay>>,
     diagnostics_overlay_plane: Single<Entity, With<DiagnosticsOverlayPlane>>,
